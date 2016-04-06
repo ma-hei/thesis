@@ -45,13 +45,13 @@ myImagePlot(training_data_lf)
 ## I get 7 cliques a 10 columns
 
 clique_list  = list()
-for (i in 1:7){
+for (i in 1:(n_targets/10)){
   clique_list[[i]] = c(((i-1)*10+1):(i*10))
 }
 
 adj_mat = matrix(0, nrow = n_drugs*n_targets, ncol = n_drugs*n_targets)
 ## now go over each clique and for each clique member a, connect it to all other clique members
-for (i in 1:length(clique_list)){
+for (i in 1:(length(clique_list))){
   for (k in 1:length(clique_list[[i]])){
     for (j in 1:length(clique_list[[i]])){
       if (k!=j){
@@ -141,7 +141,7 @@ train_mat_triplet[,2] = which(training_data>0, arr.ind = T)[,2]
 train_mat_triplet[,3] = training_data[which(training_data>0, arr.ind = T)]
 
 res = nmf(train_mat_triplet[,1:3], m = n_drugs, n = n_targets, k = 10,
-          lambda = 1, gamma = 1, tol = 0.001, maxiter = 100, threshold = 2, bias=TRUE, interaction = TRUE)
+          lambda = 1, gamma = 1, tol = 0.001, maxiter = 500, threshold = 2, bias=TRUE, interaction = TRUE)
 
 
 pred_mf = nmf.predict(res,cbind(rep(1:n_drugs, 1, each = 70), rep(1:70, n_drugs)),
@@ -166,6 +166,25 @@ for (i in 1:length(which(training_data<0))){
   mapped = (row-1)*n_targets+col
   cut_out[i] = mapped
 }
+
+##add noise to adj mat
+for (i in 1:(length(clique_list))){
+  for (k in 1:length(clique_list[[i]])){
+    for (j in 1:length(clique_list[[i]])){
+      if (k!=j){
+        ##for all rows, connect rows clique_list[[i]][k] and clique_list[[i]][j]
+        col_a = clique_list[[i]][k]
+        col_b = clique_list[[i]][j]
+        for (r in 1:n_drugs){
+          ## connect cell at position [row r, col a] with cell at [row r, col b]
+          adj_mat[(r-1)*n_targets+col_a, (r-1)*n_targets+col_b] = 1
+          adj_mat[(r-1)*n_targets+col_b, (r-1)*n_targets+col_a] = 1
+        }
+      }
+    }
+  }
+}
+
 
 adj_mat_train = adj_mat[-cut_out, -cut_out]
 
