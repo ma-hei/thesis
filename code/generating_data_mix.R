@@ -102,9 +102,7 @@ Sigma = chol2inv(chol(Sigma1))
 mu = Sigma%*%b
 
 m =  mvrnorm(n = 1, mu, Sigma, tol = 1e-6, empirical = FALSE, EISPACK = FALSE)
-
 m = (m-min(m))+1
-
 mat = matrix(m, nrow = n_drugs, byrow=T)
 
 myImagePlot(mat)

@@ -51,8 +51,9 @@ myImagePlot <- function(x, ...){
   if( !is.null(title) ){
     title(main=title)
   }
-  axis(BELOW<-1, at=1:length(xLabels), labels=xLabels, cex.axis=0.7)
-  axis(LEFT <-2, at=1:length(yLabels), labels=yLabels, las= HORIZONTAL<-1,
+  #axis(BELOW<-1, at=1:length(xLabels), labels=xLabels, cex.axis=0.7)
+  axis(BELOW<-1, at=c(1,10,20,30,40,50,60,70), labels=xLabels[c(1,10,20,30,40,50,60,70)], cex.axis=0.7)
+  axis(LEFT <-2, at=c(1,10,20,30,40,50), labels=yLabels[c(50,41,31,21,11,1)], 
        cex.axis=0.7)
   
   # Color Scale
