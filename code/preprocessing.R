@@ -115,6 +115,8 @@ dt_compounds = compound_IDs[unique(dt_triplet[,1])]
 dt_triplet[,1] = match(dt_triplet[,1], unique(dt_triplet[,1]))
 dt_triplet[,2] = match(dt_triplet[,2], unique(dt_triplet[,2]))
 
+save(dt_triplet, simi_mat, file="kiba_data.rda")
+
 counter=0
 for (i in 1:n_drugs){
   if (length(which(simi_mat[i,]>0.8))>1){

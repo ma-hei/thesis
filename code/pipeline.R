@@ -1,5 +1,5 @@
 
-compute_gradient = function(y, alpha, beta1, adj_mat_train, B, X, n_train){
+compute_gradient = function(y, alpha, beta, adj_mat_train, B_, X, n_train){
   
   A = matrix(0, nrow = n_train, ncol = n_train)
   B = matrix(0, nrow = n_train, ncol = n_train)
@@ -18,13 +18,16 @@ compute_gradient = function(y, alpha, beta1, adj_mat_train, B, X, n_train){
   b = 2*X*alpha
   
   Sigma1 = 2*(A+B)
-  Sigma = ginv(Sigma1)
+  require("MASS")
+  #Sigma = ginv(Sigma1)
+  temp = chol(Sigma1) 
+  Sigma = chol2inv(temp)
   
   mu = Sigma%*%b
   
   grad_alpha = -t(y)%*%y + 2*t(y)%*%X - 2*t(X)%*%mu + t(mu)%*%mu + sum(diag(Sigma))
   
-  grad_beta = -t(y)%*%B%*%y + t(mu)%*%B%*%mu + t(as.vector(Sigma))%*%as.vector(B)
+  grad_beta = -t(y)%*%B_%*%y + t(mu)%*%B_%*%mu + t(as.vector(Sigma))%*%as.vector(B_)
   
   return(list(grad_alpha, grad_beta))
   
@@ -70,13 +73,13 @@ train_crf = function(train, adj, mf_iters, crf_iters){
   y = t(train)[which(t(train>0), arr.ind = T)]
   X = t(temp)[which(t(!is.na(temp)), arr.ind = T)]
   
-  B1 = matrix(0, nrow = n_train, ncol = n_train)
+  B = matrix(0, nrow = n_train, ncol = n_train)
   for (i in 1:n_train){
     for (j in 1:n_train){
       if (i==j){
-        B1[i,j] = sum(adj_train[i,])
+        B[i,j] = sum(adj_train[i,])
       } else {
-        B1[i,j] = -adj_train[i,j]
+        B[i,j] = -adj_train[i,j]
       }
     }
   }
@@ -91,8 +94,8 @@ train_crf = function(train, adj, mf_iters, crf_iters){
   
   for (i in 1:crf_iters){
     
-    cat('training it ',i,':',alpha,' ',beta,'\n')
-    gradients = compute_gradient(y,alpha, beta, adj_train, B1, X, n_train)
+    cat('training iteration ',i,':',alpha,' ',beta,'\n')
+    gradients = compute_gradient(y,alpha, beta, adj_train, B, X, n_train)
     grad_alpha = gradients[[1]]
     grad_beta = gradients[[2]]
     
@@ -108,6 +111,210 @@ train_crf = function(train, adj, mf_iters, crf_iters){
   }
   
   return(list(alpha, beta))
+  
+}
+
+train_crf_by_row = function(train, adj, mf_iters, crf_iters){
+  
+  train_triplet = matrix(0, nrow = length(which(train>0)), ncol = 3)
+  train_triplet[,1] = which(train>0, arr.ind = T)[,1]
+  train_triplet[,2] = which(train>0, arr.ind = T)[,2]
+  train_triplet[,3] = train[which(train>0, arr.ind = T)]
+  
+  res = nmf.cv(train_triplet[,1:3], nfolds = 5, m = n_drugs, n = n_targets, k = 10,
+               lambda = 1, gamma = 1, tol = 0.001, maxiter = 100, threshold = 2, bias=TRUE,
+               interaction = TRUE, prediction = TRUE)
+  
+  temp = matrix(NA, nrow = nrow(train), ncol = ncol(train))
+  for (i in 1:nrow(train_triplet)){
+    temp[train_triplet[i,1], train_triplet[i,2]] = res[[3]][i]
+  }
+  
+  alpha = 0.01
+  beta = 0.01
+  
+  log_alpha = log(alpha)
+  log_beta = log(beta)
+  
+  eta = 0.001
+  
+  for (it in 1:crf_iters){
+    
+    cat('training iteration ',it,':',alpha,' ',beta,'\n')
+    
+    ## randomly choose a row
+    row = sample(1:n_drugs, 1)
+    ## train on row
+    adj_train = adj_mat[(row-1)*n_targets + which(train[row,]>0),(row-1)*n_targets + which(train[row,]>0)]
+    y = train[row, which(train[row,]>0)]
+    X = temp[row, which(!is.na(temp[row,]))]
+    
+    n_train = length(which(train[row,]>0))
+    
+    B1 = matrix(0, nrow = n_train, ncol = n_train)
+    for (i in 1:n_train){
+      for (j in 1:n_train){
+        if (i==j){
+          B1[i,j] = sum(adj_train[i,])
+        } else {
+          B1[i,j] = -adj_train[i,j]
+        }
+      }
+    }
+    
+    gradients = compute_gradient(y,alpha, beta, adj_train, B1, X, n_train)
+    grad_alpha = gradients[[1]]
+    grad_beta = gradients[[2]]
+    
+    grad_log_alpha = alpha*grad_alpha
+    grad_log_beta = beta*grad_beta
+    
+    log_alpha = log_alpha + eta * grad_log_alpha
+    log_beta = log_beta + eta * grad_log_beta
+    
+    alpha = exp(log_alpha)
+    beta = exp(log_beta)
+    
+  }
+  
+  return(list(alpha,beta))
+}
+
+## in case I want to compute the X beforehand
+train_crf_by_row_1 = function(train, adj, X, crf_iters){
+  
+  train_triplet = matrix(0, nrow = length(which(train>0)), ncol = 3)
+  train_triplet[,1] = which(train>0, arr.ind = T)[,1]
+  train_triplet[,2] = which(train>0, arr.ind = T)[,2]
+  train_triplet[,3] = train[which(train>0, arr.ind = T)]
+  
+  temp = matrix(NA, nrow = nrow(train), ncol = ncol(train))
+  for (i in 1:nrow(train_triplet)){
+    temp[train_triplet[i,1], train_triplet[i,2]] = X[i]
+  }
+  
+  alpha = 0.01
+  beta = 0.01
+  
+  log_alpha = log(alpha)
+  log_beta = log(beta)
+  
+  eta = 0.001
+  
+  for (it in 1:crf_iters){
+    
+    cat('training iteration ',it,':',alpha,' ',beta,'\n')
+    
+    ## randomly choose a row
+    row = sample(1:n_drugs, 1)
+    ## train on row
+    adj_train = adj_mat[(row-1)*n_targets + which(train[row,]>0),(row-1)*n_targets + which(train[row,]>0)]
+    y = train[row, which(train[row,]>0)]
+    X = temp[row, which(!is.na(temp[row,]))]
+    
+    n_train = length(which(train[row,]>0))
+    
+    B1 = matrix(0, nrow = n_train, ncol = n_train)
+    for (i in 1:n_train){
+      for (j in 1:n_train){
+        if (i==j){
+          B1[i,j] = sum(adj_train[i,])
+        } else {
+          B1[i,j] = -adj_train[i,j]
+        }
+      }
+    }
+    
+    gradients = compute_gradient(y,alpha, beta, adj_train, B1, X, n_train)
+    grad_alpha = gradients[[1]]
+    grad_beta = gradients[[2]]
+    
+    grad_log_alpha = alpha*grad_alpha
+    grad_log_beta = beta*grad_beta
+    
+    log_alpha = log_alpha + eta * grad_log_alpha
+    log_beta = log_beta + eta * grad_log_beta
+    
+    alpha = exp(log_alpha)
+    beta = exp(log_beta)
+    
+  }
+  
+  return(list(alpha,beta))
+}
+
+## in case I can't store the adjacency mat
+train_crf_by_row_2 = function(train, adj_list, X, crf_iters, eta){
+  
+  n_drugs = nrow(train)
+  n_targets = ncol(train)
+  
+  train_triplet = matrix(0, nrow = length(which(train>0)), ncol = 3)
+  train_triplet[,1] = which(train>0, arr.ind = T)[,1]
+  train_triplet[,2] = which(train>0, arr.ind = T)[,2]
+  train_triplet[,3] = train[which(train>0, arr.ind = T)]
+  
+  temp = matrix(NA, nrow = nrow(train), ncol = ncol(train))
+  for (i in 1:nrow(train_triplet)){
+    temp[train_triplet[i,1], train_triplet[i,2]] = X[i]
+  }
+  
+  alpha = 0.01
+  beta = 0.01
+  
+  log_alpha = log(alpha)
+  log_beta = log(beta)
+  
+  eta = eta
+  
+  for (it in 1:crf_iters){
+    
+    cat('training iteration ',it,':',alpha,' ',beta,'\n')
+    
+    ## randomly choose a row
+    col = sample(1:n_targets, 1)
+    ## train on row
+    ## adj_train = adj_mat[(row-1)*n_targets + which(train[row,]>0),(row-1)*n_targets + which(train[row,]>0)]
+    adj_train = adj_list[[col]]
+    # y = train[row, which(train[row,]>0)]
+    y = train[which(train[,col]>0),col]
+    # X = temp[row, which(!is.na(temp[row,]))]
+    X = temp[which(!is.na(temp[,col])),col]
+    
+    # n_train = length(which(train[row,]>0))
+    n_train = length(which(train[,col]>0))
+    
+    if (n_train>0){
+      cat('training on column ', col,'.. ',n_train,' observations\n')
+      B1 = matrix(0, nrow = n_train, ncol = n_train)
+      for (i in 1:n_train){
+        for (j in 1:n_train){
+          if (i==j){
+            B1[i,j] = sum(adj_train[i,])
+          } else {
+            B1[i,j] = -adj_train[i,j]
+          }
+        }
+      }
+      
+      gradients = compute_gradient(y,alpha, beta, adj_train, B1, X, n_train)
+      grad_alpha = gradients[[1]]
+      grad_beta = gradients[[2]]
+      
+      grad_log_alpha = alpha*grad_alpha
+      grad_log_beta = beta*grad_beta
+      
+      log_alpha = log_alpha + eta * grad_log_alpha
+      log_beta = log_beta + eta * grad_log_beta
+      
+      alpha = exp(log_alpha)
+      beta = exp(log_beta)
+      
+    }
+    
+  }
+  
+  return(list(alpha,beta))
   
 }
 
@@ -449,6 +656,31 @@ generate_dataset_scenario_4 = function(n_drugs, n_targets){
   ## get mu and Sigma of probability distr. thats defined by a crf
   ## where X is the latent factor matrix
   res = create_crf(1,2,as.vector(t(lf_mat)), adj_mat)
+  
+  ## take a sample of this matrix (make sure all values above 0)
+  m =  mvrnorm(n = 1, res[[2]], res[[1]], tol = 1e-6, empirical = FALSE, EISPACK = FALSE)
+  m = (m-min(m))+1
+  mat = matrix(m, nrow = n_drugs, byrow=T)
+  ##myImagePlot(mat)
+  
+  train = sample_training_data(mat)
+  
+  return(list(mat, train))
+  
+}
+
+generate_dataset_scenario_9 = function(n_drugs, n_targets){
+  
+  ## generate a matrix of values with underlying latent factors
+  lf_mat = generate_latent_factor_mat(n_drugs, n_targets)
+  ##myImagePlot(lf_mat)
+  
+  ## create an example adjacency matrix 
+  adj_mat = create_example_adj_mat(n_drugs, n_targets)
+  
+  ## get mu and Sigma of probability distr. thats defined by a crf
+  ## where X is the latent factor matrix
+  res = create_crf(0.5,0.07,as.vector(t(lf_mat)), adj_mat)
   
   ## take a sample of this matrix (make sure all values above 0)
   m =  mvrnorm(n = 1, res[[2]], res[[1]], tol = 1e-6, empirical = FALSE, EISPACK = FALSE)

@@ -22,7 +22,7 @@ for (i in 1:k) {
   trind = setdiff(1:n,teind)
   res = libmf(train.triplet[trind,], m = n_drugs, n = n_targets, k = 20, cost = 0.01, lrate = 0.01,
               
-              niter = 600, nthread = 1, nmf = FALSE, verbose = FALSE)
+              niter = 100, nthread = 1, nmf = FALSE, verbose = FALSE)
   
   P = res[[2]][[1]]
   Q = res[[2]][[2]]
@@ -32,6 +32,7 @@ for (i in 1:k) {
   preds[teind] = tmp.pred
 }
 
+cutoff = 12.1
 rmse.val = sqrt(mean((train[,3]-preds)^2))
 pred.obj = ROCR::prediction(preds, as.numeric(train[,3]>cutoff))
 auc.obj = ROCR::performance(pred.obj, measure = 'auc')
