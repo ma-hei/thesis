@@ -1,5 +1,5 @@
 
-compute_gradient = function(y, alpha, beta1, adj_mat_train, B1, X, n_train){
+compute_gradient = function(y, alpha, beta1, adj_mat_train, B, X, n_train){
   
   A = matrix(0, nrow = n_train, ncol = n_train)
   B = matrix(0, nrow = n_train, ncol = n_train)
@@ -8,9 +8,9 @@ compute_gradient = function(y, alpha, beta1, adj_mat_train, B1, X, n_train){
     for (j in 1:(n_train)){
       if (i==j){
         A[i,j] = sum(alpha)
-        B[i,j] = beta1*sum(adj_mat_train[i,]) 
+        B[i,j] = beta*sum(adj_mat_train[i,]) 
       } else {
-        B[i,j] = -(beta1*adj_mat_train[i,j])
+        B[i,j] = -(beta*adj_mat_train[i,j])
       }
     }
   }
@@ -24,9 +24,9 @@ compute_gradient = function(y, alpha, beta1, adj_mat_train, B1, X, n_train){
   
   grad_alpha = -t(y)%*%y + 2*t(y)%*%X - 2*t(X)%*%mu + t(mu)%*%mu + sum(diag(Sigma))
   
-  grad_beta1 = -t(y)%*%B1%*%y + t(mu)%*%B1%*%mu + t(as.vector(Sigma))%*%as.vector(B1)
+  grad_beta = -t(y)%*%B%*%y + t(mu)%*%B%*%mu + t(as.vector(Sigma))%*%as.vector(B)
   
-  return(list(grad_alpha, grad_beta1))
+  return(list(grad_alpha, grad_beta))
   
 }
 
@@ -192,7 +192,8 @@ create_crf = function(alpha, beta, X, adj_mat){
   Sigma1 = 2*(A+B)
   require("MASS")
   #Sigma = ginv(Sigma1)
-  Sigma = chol2inv(chol(Sigma1))
+  temp = chol(Sigma1) 
+  Sigma = chol2inv(temp)
   mu = Sigma%*%b
   
   return(list(Sigma,mu))
@@ -268,7 +269,7 @@ get_mf_prediction = function(train, iter){
   res = nmf(train_mat_triplet[,1:3], m = n_drugs, n = n_targets, k = 10,
             lambda = 1, gamma = 1, tol = 0.001, maxiter = iter, threshold = 2, bias=TRUE, interaction = TRUE)
   
-  pred_mf = nmf.predict(res,cbind(rep(1:n_drugs, 1, each = 70), rep(1:70, n_drugs)),
+  pred_mf = nmf.predict(res,cbind(rep(1:n_drugs, 1, each = n_targets), rep(1:n_targets, n_drugs)),
                         bias = TRUE,interaction = TRUE)
   
   pred_mf_mat = matrix(pred_mf, nrow = n_drugs, byrow = T)
@@ -302,7 +303,7 @@ get_crf_prediction = function(Sigma, mu, train){
 
 generate_dataset = function(n_drugs, n_targets){
   
-  ## generate a matrix of values with underlying latent factors
+## generate a matrix of values with underlying latent factors
   lf_mat = generate_latent_factor_mat(n_drugs, n_targets)
   ##myImagePlot(lf_mat)
   
