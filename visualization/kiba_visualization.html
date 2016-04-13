@@ -1,0 +1,144 @@
+
+<html>
+    <head>
+        <title>upperleft</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
+        <script>
+
+	       function type(d) {
+                d.Kd = + d.Kd;
+                d.Ligand_SMILES = + d.Ligand_SMILES;
+                d.Target_Primary_ID = +d.Target_Primary_ID;
+                return d;
+            }
+
+
+            d3.tsv("kiba_dataset.tsv", type, function(data) {
+
+                scale_color = function(z, min, max){
+
+                    var range = max - min;
+                    var z = z-min;
+                    var r = Math.floor((255*z)/range);
+                    var g = Math.floor((255*(range-z))/range);
+                    var b = 0;
+
+                    var color = [];
+                    color[0]=r;
+                    color[2]=g;
+                    color[1]=b;
+
+                    return color;
+
+                }
+
+                var max_kd=0;
+                var min_kd = Number.POSITIVE_INFINITY;
+
+                var drug_array = [];
+                var target_array = [];
+                var kd_count=0;
+
+                data.forEach(function(d) {
+
+                    if (drug_array.indexOf(d.Ligand_SMILES)==-1){
+                        drug_array.push(d.Ligand_SMILES);
+                    }
+                    if (target_array.indexOf(d.Target_Primary_ID)==-1){
+                        target_array.push(d.Target_Primary_ID);
+                    }
+
+                    if (d.Kd>max_kd){
+                        max_kd = d.Kd;
+                    }
+
+                    if (d.Kd<min_kd){
+                        min_kd = d.Kd;
+                    }
+                });
+
+                console.log(min_kd+"; "+max_kd);
+
+                var dt_matrix = [];
+                for (var i=0;i<drug_array.length;i++){
+                    dt_matrix[i] = [];
+                }
+
+                for (var i=0;i<drug_array.length;i++){
+                    for (var k=0;k<target_array.length;k++){
+                        dt_matrix[i][k]=0;
+                    }
+                }
+
+                data.forEach(function(d){
+                    dt_matrix[d.Ligand_SMILES-1][d.Target_Primary_ID-1]=d.Kd;
+                    kd_count++;
+
+                });
+
+                console.log(drug_array.length+" drugs and "+target_array.length+" targets.. "+kd_count+" interactions..");
+
+                var margin = {top: 20, right: 30, bottom: 30, left: 40},
+                    width = 3000 - margin.left - margin.right,
+                    height = 16500 - margin.top - margin.bottom;
+
+                var chart = d3.select(".matrix")
+                    .attr("width", (width + margin.left+ margin.right))
+                    .attr("height", height + margin.top + margin.bottom)
+                    .append("g")
+                    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+                var matrix = [];
+
+                for (var i=0;i<drug_array.length;i++){
+                    matrix[i] = d3.range(target_array.length).map(function(j){return {x:j, y:i, z:dt_matrix[i][j]}; });
+                }
+
+                var x = d3.scale.ordinal().rangeBands([0, width]);
+                x.domain(d3.range(target_array.length));
+
+                var y = d3.scale.ordinal().rangeBands([0, height]);
+                y.domain(d3.range(drug_array.length));
+
+                chart.append("rect")
+                    .attr("class", "background")
+                    .attr("width", width)
+                    .attr("height", height);
+
+                var row = chart.selectAll(".row")
+                        .data(matrix)
+                        .enter().append("g")
+                        .attr("class", "row")
+                        .attr("transform", function(d, i) { return "translate(0," + y(i) + ")"; })
+                        .attr("id",function(d,i){ return "row_"+i;})
+                        .each(row);
+
+                function row(row){
+                    var cell = d3.select(this).selectAll(".cell")
+                            .data(row.filter(function(d) { return d.z; }))
+                            .enter().append("rect")
+                            .attr("class", "cell")
+                            .attr("x", function(d) {
+                                return x(d.x);} )
+                            .attr("width", x.rangeBand())
+                            .attr("height", y.rangeBand())
+                            .style("fill", function(d){
+                              if (d.z>13.1){
+                                return "rgb(0,255,0)";
+                              } else {
+                                color = scale_color(d.z,9, 16);
+                                return "rgb("+color[0]+","+color[1]+","+color[2]+")";
+                              }
+                            });
+                }
+
+
+
+  });
+
+	</script>
+	<body>
+		<svg class="matrix"></svg></br>
+	</body>

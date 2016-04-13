@@ -29,6 +29,13 @@ create_adj_mat_for_column = function(dt_mat, simi_mat, c){
     #cat('got observations for drug ',k,'\n')
     neighbors = which(simi_mat[k,]>0.9 & simi_mat[k,]<1)
     #cat('which is adj to ',neighbors,'\n')
+    #noise = sample(temp, 5)
+    #for (n in noise){
+    #  if (n!=k){
+    #    adj_temp[match(k, temp), match(n, temp)] = 1
+    #    adj_temp[match(n, temp), match(k, temp)] = 1
+    #  }
+    #}
     for (n in neighbors){
       if (n %in% temp){
         #cat('neigbor ',n,' was also observed for this target\n')
