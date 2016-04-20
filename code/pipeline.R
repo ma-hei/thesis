@@ -649,6 +649,8 @@ get_libmf_prediction = function(train, iter){
 
 get_crf_prediction = function(Sigma, mu, train){
   
+  n_drugs = length(train)
+  
   unknown = which(as.vector(t(train))<0)
   known = which(as.vector(t(train))>=0)
   
@@ -672,7 +674,7 @@ generate_dataset = function(n_drugs, n_targets){
   
 ## generate a matrix of values with underlying latent factors
   lf_mat = generate_latent_factor_mat(n_drugs, n_targets)
-  ##myImagePlot(lf_mat)
+  myImagePlot(lf_mat)
   
   ## create an example adjacency matrix 
   adj_mat = create_example_adj_mat(n_drugs, n_targets)
@@ -689,7 +691,7 @@ generate_dataset = function(n_drugs, n_targets){
   
   train = sample_training_data(mat)
   
-  return(list(mat, train))
+  return(list(mat, train, lf_mat))
   
 }
 
@@ -976,6 +978,12 @@ make_crf_predictions_for_row = function(alpha, beta, train, adj_mat, X, col){
   
 }
 
+make_crf_predictions_col = function(alpha, beta, column, adj_mat, X){
+  
+  n_targets = nrow(adj_mat)
+  
+}
+
 make_crf_predictions_row = function(alpha, beta, column, adj_mat, X){
   
   n_drugs = nrow(adj_mat)
@@ -1032,15 +1040,62 @@ make_adjacency_mat = function(simi_mat){
   adj_mat = matrix(0, nrow = n_drugs, ncol = n_drugs)
   for (i in 1:n_drugs){
     inds = which(simi_mat[i,]>0.9 & simi_mat[i,]<1)
+    #inds = order(simi_mat[i,], decreasing = T)[2:5]
     if (length(inds)<4){
       inds = order(simi_mat[i,], decreasing = T)[2:5]
     }
     adj_mat[i, inds] = 1
     adj_mat[inds,i ] = 1
+    #adj_mat[i, inds] = simi_mat[i, inds]
+    #adj_mat[inds, i] = simi_mat[inds, i]
   }
   
   return(adj_mat)
   
+}
+
+
+make_adjacency_mat_targets = function(simi_mat, thresh){
+  
+  n_targets = nrow(simi_mat)
+  
+  adj_mat = matrix(0, nrow = n_targets, ncol = n_targets)
+  for (i in 1:n_targets){
+    inds = which(simi_mat[i,]>thresh & simi_mat[i,]<1)
+    #inds = order(simi_mat[i,], decreasing = T)[2:5]
+    #if (length(inds)<4){
+    #  inds = order(simi_mat[i,], decreasing = T)[2:5]
+    #}
+    adj_mat[i, inds] = 1
+    adj_mat[inds,i ] = 1
+    #adj_mat[i, inds] = simi_mat[i, inds]
+    #adj_mat[inds, i] = simi_mat[inds, i]
+  }
+  
+  return(adj_mat)
+  
+}
+
+make_training_adj_mat_for_row = function(dt_mat, simi_mat, row, thresh){
+  
+  n_train = length(which(dt_mat[row,]>=0))
+  adj_temp = matrix(0, nrow = n_train, ncol = n_train)
+  temp = which(dt_mat[row,]>0)
+  for (k in temp){
+    neighbors = which(simi_mat[k,]>thresh & simi_mat[k,]<1)
+    #neighbors = order(simi_mat[k,], decreasing = T)[2:5]
+    #if (length(neighbors)<4){
+    #  neighbors = order(simi_mat[k,], decreasing = T)[2:5]
+    #}
+    for (n in neighbors){
+      if (n %in% temp){
+        adj_temp[match(k, temp), match(n, temp)] = 1
+        adj_temp[match(n, temp), match(k, temp)] = 1
+      }
+    }
+  }
+  
+  return(adj_temp)
 }
 
 make_training_adj_mat_for_column = function(dt_mat, simi_mat, col){
@@ -1051,6 +1106,7 @@ make_training_adj_mat_for_column = function(dt_mat, simi_mat, col){
   for (k in temp){
     #cat('got observation for drug ',k,'\n')
     neighbors = which(simi_mat[k,]>0.9 & simi_mat[k,]<1)
+    #neighbors = order(simi_mat[k,], decreasing = T)[2:5]
     if (length(neighbors)<4){
       neighbors = order(simi_mat[k,], decreasing = T)[2:5]
     }
@@ -1068,6 +1124,8 @@ make_training_adj_mat_for_column = function(dt_mat, simi_mat, col){
         #cat(match(n, temp),'\n')
         adj_temp[match(k, temp), match(n, temp)] = 1
         adj_temp[match(n, temp), match(k, temp)] = 1
+        #adj_temp[match(k, temp), match(n, temp)] = simi_mat[k, n]
+        #adj_temp[match(n, temp), match(k, temp)] = simi_mat[n, k]
       }
     }
   }
@@ -1077,7 +1135,7 @@ make_training_adj_mat_for_column = function(dt_mat, simi_mat, col){
 get_metrics = function(preds, labels, cutoff){
   rmse = sqrt(mean((preds - labels)^2))
   
-  if (length(which(labels>=cutoff))>0){
+  if (length(which(labels>=cutoff))>0 && length(preds)>1 && length(which(labels<cutoff))>0){
     
     pred.obj = ROCR::prediction(preds, as.numeric(labels>=cutoff))
     auc.obj = ROCR::performance(pred.obj, measure = 'auc')
@@ -1092,7 +1150,7 @@ get_metrics = function(preds, labels, cutoff){
     }
     
     func = approxfun(cbind(rec.val,prec.val), yleft = 1)
-    aupr.val = integrate(func, 0, 1, subdivisions = 1000L)$value
+    aupr.val = integrate(func, 0, 0.99999, subdivisions = 1000L)$value
   } else {
     auc.val=NA
     aupr.val=NA

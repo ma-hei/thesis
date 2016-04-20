@@ -5,7 +5,7 @@ kiba_data = read.xlsx("../data/ci400709d_si_002.xlsx",5,startRow = 1)
 
 ## the first column holds the CHEMBL IDs of the compounds
 compound_IDs = kiba_data[,1]
-target_IDs = names(kiba_data[-1,])
+target_IDs = names(kiba_data[,-1])
 
 dt_mat = kiba_data[,-1]
 dt_mat = as.matrix(dt_mat)
@@ -15,7 +15,7 @@ class(dt_mat) = "numeric"
 names(kiba_data)
 
 length(unique(kiba_data[,1]))
-length(names(kiba_data[-1,]))
+length(names(kiba_data[,-1]))
 
 ## make a triplet format
 dt_triplet = matrix(0, nrow = length(which(!is.na(dt_mat))), ncol = 3)
@@ -58,6 +58,7 @@ while (flag)
 nrow(dt_triplet)/(length(unique(dt_triplet[,2]))*length(unique(dt_triplet[,1])))
 
 dt_compound_IDs = compound_IDs[unique(dt_triplet[,1])] 
+dt_target_IDs = target_IDs[unique(dt_triplet[,2])]
 
 ################################
 ## match CHEMBL IDs to pubchem CIDs
@@ -109,6 +110,11 @@ compound_b = 3269
 simi_mat[compound_a ,compound_b]
 df[match(compound_IDs[unique(dt_triplet[,1])][compound_a], df[,1]),2]
 df[match(compound_IDs[unique(dt_triplet[,1])][compound_b], df[,1]),2]
+##
+
+## get the target similarity matrix
+dt_target_IDs = target_IDs[unique(dt_triplet[,2])]
+paste(dt_target_IDs, collapse=' ')
 ##
 
 dt_compounds = compound_IDs[unique(dt_triplet[,1])]

@@ -7,10 +7,10 @@ n_drugs = 50
 n_targets = 70
 
 data = generate_dataset_scenario_2(n_drugs, n_targets)
-complete = data[[1]]
-train = data[[2]]
-myImagePlot(complete)
-myImagePlot(train)
+complete_2 = data[[1]]
+train_2 = data[[2]]
+myImagePlot(complete_2)
+myImagePlot(train_2)
 
 ## now create an adjacency mat that connects all cliques (and thus contains some noise)
 adj_mat = create_example_adj_mat(n_drugs, n_targets)

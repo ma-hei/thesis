@@ -9,6 +9,8 @@ n_targets = 70
 data = generate_dataset(n_drugs, n_targets)
 complete = data[[1]]
 train = data[[2]]
+lf_mat = data[[3]]
+myImagePlot(lf_mat)
 myImagePlot(complete)
 myImagePlot(train)
 
@@ -28,6 +30,7 @@ res = create_crf(params[[1]], params[[2]], X, adj_mat)
 
 ## condition the resulting probability dist on the observed values in the training data
 mat = get_crf_prediction(res[[1]],res[[2]],train)
+mat = matrix(mat, nrow = n_drugs, byrow=T)
 myImagePlot(mat)
 ## the rmse of the crf predictions is:
 sqrt(mean((as.vector(t(mat)) - as.vector(t(complete)))^2))

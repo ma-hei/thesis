@@ -9,14 +9,21 @@ dt_triplet[,3] = dt_triplet[,3]*-1
 dt_triplet[,3] = dt_triplet[,3] - min(dt_triplet[,3]) 
 hist(dt_triplet[,3])
 
-test_folds = get_folds(dt_triplet, 5)
+n_folds = 5
+
+test_folds = get_folds(dt_triplet, n_folds)
 
 crf_predictions = rep(NA, nrow(dt_triplet))
 mf_predictions = rep(NA, nrow(dt_triplet))
 
 adj_mat = make_adjacency_mat(simi_mat)
 
-for (i in 1:n_folds){
+save(test_folds, adj_mat, crf_predictions, mf_predictions, n_folds, simi_mat, dt_triplet, n_drugs, n_targets, file="experiment_3.rda")
+
+load("experiment_3.rda")
+
+#for (i in 1:n_folds){
+#for (i in 4:5){
   cat('fold ',i,'\n')
   
   test_ind = test_folds[[i]]
@@ -72,11 +79,11 @@ for (i in 1:n_folds){
     mf_metrics = get_metrics(mf_predictions[inds], dt_triplet[inds,3], 12.1)
     crf_metrics = get_metrics(crf_predictions[inds], dt_triplet[inds,3], 12.1)
     
-    cat('all test rmse (mf, crf) so far: ',mf_metrics[[1]],', ',crf_metrics[[1]],'\n')
-    cat('all test auc (mf, crf) so far: ',mf_metrics[[2]],', ',crf_metrics[[2]],'\n')
-    cat('all test aupr (mf, crf) so far: ',mf_metrics[[3]],', ',crf_metrics[[3]],'\n\n')
+    cat('all test rmse (mf, crf) so far: ',round(mf_metrics[[1]], digits = 2),', ',round(crf_metrics[[1]], digits = 2),'\n')
+    cat('all test auc (mf, crf) so far: ',round(mf_metrics[[2]], digits = 2),', ',round(crf_metrics[[2]], digits = 2),'\n')
+    cat('all test aupr (mf, crf) so far: ',round(mf_metrics[[3]], digits = 2),', ',round(crf_metrics[[3]], digits = 2),'\n\n')
     
   }
 }
 
-save(crf_predictions, file="crf_predictions_eta01.rda")
+save(crf_predictions, file="crf_predictions_eta.rda")
