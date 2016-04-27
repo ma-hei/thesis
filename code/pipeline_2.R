@@ -1,9 +1,33 @@
+print_prediction_metrics_set = function(target_set, mix_dataset, test_ind, crf_preds, mf_preds_all_mat){
+  
+  crf_predictions = rep(NA, nrow(mix_dataset))
+  mf_predictions = rep(NA, nrow(mix_dataset))
+  for (t in target_set){
+    inds = which(mix_dataset[test_ind,2]==t)
+    drugs = mix_dataset[test_ind[inds],1]
+    labels = mix_dataset[test_ind[inds],3]
+    crf_predictions_test_col = crf_preds[drugs, match(t,target_set)]
+    ans1 = get_metrics(preds = crf_predictions_test_col, labels = labels, cutoff = 7)
+    mf_predictions_test_col = mf_preds_all_mat[drugs, match(t,target_set)]
+    ans2 = get_metrics(preds = mf_predictions_test_col, labels = labels, cutoff = 7)
+    crf_predictions[test_ind[inds]] = crf_predictions_test_col
+    mf_predictions[test_ind[inds]] = mf_predictions_test_col
+  }
+  
+  inds = which(!is.na(mf_predictions))
+  mf_metrics = get_metrics(mf_predictions[inds], mix_dataset[inds,3], 7)
+  crf_metrics = get_metrics(crf_predictions[inds], mix_dataset[inds,3], 7)
+  
+  cat('all rmse (mf, crf) so far: ',round(mf_metrics[[1]], digits = 5),', ',round(crf_metrics[[1]], digits = 5),'\n')
+  cat('all test auc (mf, crf) so far: ',round(mf_metrics[[2]], digits = 5),', ',round(crf_metrics[[2]], digits = 5),'\n')
+  cat('all test aupr (mf, crf) so far: ',round(mf_metrics[[3]], digits = 5),', ',round(crf_metrics[[3]], digits = 5),'\n\n')
+  
+}
 
 make_B_matrices = function(training_data_mat, row_adj_mat, col_adj_mat){
   
   n_drugs = nrow(training_data_mat)
   n_targets = ncol(training_data_mat)
-  
   
   ## make Bk matrices.. one for each column
   Bk_matrices = list()
@@ -82,7 +106,56 @@ make_B_matrices = function(training_data_mat, row_adj_mat, col_adj_mat){
   
 }
 
-get_Sigma_mu_train = function(training_data_mat, X_vec, target_beta_train_list, row_beta_train, alpha_train){
+make_B_mats_simple = function(training_data_mat, row_adj_mat, col_adj_mat){
+  
+  n_drugs = nrow(training_data_mat)
+  n_targets = ncol(training_data_mat)
+  
+  n_train = length(which(training_data_mat>=0))
+  
+  inds = which(t(training_data_mat)>=0, arr.ind = T)
+  
+  B_row = matrix(0, nrow = n_train, ncol = n_train)
+  for (d in 1:n_drugs){
+    for (t in 1:n_targets){
+      if (training_data_mat[d,t]>=0){
+        given_targets = which(training_data_mat[d,]>=0)
+        given_targets = setdiff(given_targets,t)
+        neighbors = which(col_adj_mat[t,]>0)
+        given_neighbors = given_targets[which(given_targets %in% neighbors)]
+        cell_a = which(inds[,1]==t & inds[,2]==d)
+        for (gn in given_neighbors){
+          cell_b = which(inds[,1]==gn & inds[,2]==d)
+          B_row[cell_a, cell_b] = -1
+        }
+        B_row[cell_a, cell_a] = length(given_neighbors)
+      }
+    }
+  }
+  
+  B_col = matrix(0, nrow = n_train, ncol = n_train)
+  for (d in 1:n_drugs){
+    for (t in 1:n_targets){
+      if (training_data_mat[d,t]>=0){
+        given_drugs = which(training_data_mat[,t]>=0)
+        given_drugs = setdiff(given_drugs,d)
+        neighbors = which(row_adj_mat[d,]>0)
+        given_neighbors = given_drugs[which(given_drugs %in% neighbors)]
+        cell_a = which(inds[,1]==t & inds[,2]==d)
+        for (gn in given_neighbors){
+          cell_b = which(inds[,1]==t & inds[,2]==gn)
+          B_col[cell_a, cell_b] = -1
+        }
+        B_col[cell_a, cell_a] = length(given_neighbors)
+      }
+    }
+  }
+  
+  return(list(B_row, B_col))
+  
+}
+
+get_Sigma_mu_train = function(training_data_mat, X_vec, target_beta_train_list, row_beta_train, alpha_train, row_adj_mat, col_adj_mat){
   
   n_train = length(which(training_data_mat>0))
   A_train = matrix(0, nrow = n_train, ncol = n_train)
@@ -129,11 +202,177 @@ get_Sigma_mu_train = function(training_data_mat, X_vec, target_beta_train_list, 
   
 }
 
+get_gaussian_train_simple = function(training_data_mat, X_vec, alpha_train, row_beta_train, col_beta_train, B_row, B_col){
+  
+  n_train = length(which(training_data_mat>0))
+  A_train = matrix(0, nrow = n_train, ncol = n_train)
+  B_train = matrix(0, nrow = n_train, ncol = n_train)
+  
+  B_train = row_beta_train*B_row + col_beta_train*B_col
+  for (i in 1:n_train){
+    A_train[i,i] = alpha_train
+  }
+  
+  Sigma1 = 2*(A_train+B_train)
+  require("MASS")
+  temp = chol(Sigma1) 
+  Sigma = chol2inv(temp)
+  
+  b = 2*X_vec*alpha_train
+  mu = Sigma%*%b
+  
+  return (list(Sigma, mu))
+  
+}
+
+get_gaussian_predict_simple = function(training_data_mat, X_mat, alpha, beta_row, beta_train, B_row, B_col){
+  
+  n_drugs = nrow(training_data_mat)
+  n_targets = ncol(training_data_mat)
+  A = matrix(0, nrow = n_drugs*n_targets, ncol = n_drugs*n_targets)
+  B = matrix(0, nrow = n_drugs*n_targets, ncol = n_drugs*n_targets)
+  
+  B = row_beta_train*B_row + col_beta_train*B_col
+  for (i in 1:(n_drugs*n_targets)){
+    A[i,i] = alpha
+  }
+  
+}
+
+train_crf_dual_simple = function(training_data_mat, row_adj_mat, col_adj_mat, mf_preds_train_mat, crf_iters, eta){
+
+  ans = make_B_mats_simple(training_data_mat, row_adj_mat, col_adj_mat)
+  B_row = ans[[1]]
+  B_col = ans[[2]]
+  
+  y_vec = t(training_data_mat)[which(t(training_data_mat)>=0)]
+  X_train = t(mf_preds_train_mat)[which(!is.na(t(mf_preds_train_mat)))]
+  
+  eta = eta
+  row_beta_train = 0.001
+  col_beta_train = 0.001
+  alpha_train = 0.001
+  
+  for (it in 1:crf_iters){
+    
+    cat('iteration ',it,'.. alpha ',alpha_train,' row beta ',row_beta_train,' col beta ',col_beta_train,'\n')
+    
+    ans = get_gaussian_train_simple(training_data_mat = training_data_mat, X_vec = X_train, alpha_train = alpha_train, row_beta_train = row_beta_train, col_beta_train = col_beta_train, B_row = B_row, B_col = B_col)
+    Sigma = ans[[1]]
+    mu = ans[[2]]
+    
+    log_alpha_train = log(alpha_train)
+    grad_alpha_train = get_gradient_alpha(y_vec = y_vec, X_vec = X_train, mu = mu, Sigma = Sigma)
+    grad_log_alpha_train = alpha_train*grad_alpha_train
+    log_alpha_train = log_alpha_train + eta * grad_log_alpha_train
+    alpha_train = exp(log_alpha_train)
+   
+    log_row_beta_train = log(row_beta_train)
+    grad_row_beta_train = get_B_gradient(y_vec = y_vec, B = B_row, mu = mu, Sigma = Sigma)
+    grad_log_row_beta_train = row_beta_train*grad_row_beta_train
+    log_row_beta_train = log_row_beta_train + eta*grad_log_row_beta_train
+    row_beta_train = exp(log_row_beta_train)
+    
+    log_col_beta_train = log(col_beta_train)
+    grad_col_beta_train = get_B_gradient(y_vec = y_vec, B = B_col, mu = mu, Sigma = Sigma)
+    grad_log_col_beta_train = col_beta_train*grad_col_beta_train
+    log_col_beta_train = log_col_beta_train + eta*grad_log_col_beta_train
+    col_beta_train = exp(log_col_beta_train)
+    
+    if (row_beta_train<1e-10){
+      row_beta_train = 1e-10
+    } else if (row_beta_train>2){
+      row_beta_train = 2
+    }
+    
+    if (col_beta_train<1e-10){
+      col_beta_train = 1e-10
+    } else if (col_beta_train>2){
+      col_beta_train = 2
+    }
+    
+    if (alpha_train<1e-10){
+      alpha_train = 1e-10
+    } else if (alpha_train>2){
+      alpha_train = 2
+    }
+    
+  }
+  
+  return (list(alpha_train, row_beta_train, col_beta_train))
+  
+}
+
+simple_crf_predict = function(training_data_mat, row_adj_mat, col_adj_mat, alpha, row_beta, col_beta, X_mat){
+  
+  n_drugs = nrow(training_data_mat)
+  n_targets = ncol(training_data_mat)
+  
+  A = matrix(0, nrow = n_drugs*n_targets, ncol = n_drugs*n_targets)
+  B = matrix(0, nrow = n_drugs*n_targets, ncol = n_drugs*n_targets)
+  
+  for (d in 1:n_drugs){
+    for (t in 1:n_targets){
+      row_neighbors = which(row_adj_mat[d,]==1)
+      col_neighbors = which(col_adj_mat[t,]==1)
+      temp_a = (d-1)*n_targets+t
+      for (rn in row_neighbors){
+        temp_b = (rn-1)*n_targets+t
+        B[temp_a,temp_b] = B[temp_a,temp_b] - col_beta
+      }
+      for (cn in col_neighbors){
+        temp_b = (d-1)*n_targets+cn
+        B[temp_a,temp_b] = B[temp_a,temp_b] - row_beta
+      }
+      A[temp_a, temp_a] = alpha
+      nrow_neighbors = length(which(row_adj_mat[d,]>0))
+      ncol_neighbors = length(which(col_adj_mat[t,]>0))
+      sum = col_beta*nrow_neighbors+row_beta*ncol_neighbors
+      B[temp_a, temp_a] = sum
+    }
+  }
+  
+  Sigma1 = 2*(A+B)
+  #require("MASS")
+  #temp = chol(Sigma1) 
+  #Sigma = chol2inv(temp)
+  inds = which(Sigma1!=0, arr.ind = T)
+  sm = sparseMatrix(i = inds[,1], j = inds[,2], x = Sigma1[inds])
+  Sigma = as.matrix(chol2inv(chol(sm)))
+  
+  X = as.vector(t(X_mat))
+  b = 2*X*alpha
+  
+  mu = Sigma%*%b
+  
+  unknown = which(as.vector(t(training_data_mat))<0)
+  known = which(as.vector(t(training_data_mat))>=0)
+  
+  Sigma12 = Sigma[unknown, known]
+  Sigma22 = Sigma[known, known]
+  Sigma221 = chol2inv(chol(Sigma22))
+  mu_ = mu[unknown] + Sigma12%*%Sigma221%*%(as.vector(t(training_data_mat))[known] - mu[known])
+  mu_all = rep(0, length(mu))
+  mu_all[unknown] = mu_
+  mu_all[known] = as.vector(t(dt_mat_temp))[known]
+  
+  pred_mat = matrix(mu_all, nrow = n_drugs, byrow = T)
+  
+  return (pred_mat)
+}
+
+get_B_gradient = function(y_vec, B, mu, Sigma){
+  
+  gradient_beta = -t(y_vec)%*%B%*%y_vec+t(mu)%*%B%*%mu+t(as.vector(Sigma)%*%as.vector(B))
+  
+  return(as.numeric(gradient_beta))
+}
+  
 get_gradient_alpha = function(y_vec, X_vec, mu, Sigma){
   
   gradient_alpha = -t(y_vec)%*%y_vec+2*t(y_vec)%*%X_vec-2*t(X_vec)%*%mu+t(mu)%*%mu+sum(diag(Sigma))
   
-  return(gradient_alpha)
+  return(as.numeric(gradient_alpha))
   
 }
 
@@ -203,7 +442,7 @@ get_mf_cv = function(train_mat, iters){
   
 }
 
-train_crf = function(training_data_mat, row_adj_mat, col_adj_mat, eta, crf_iters, mf_preds){
+train_crf_2 = function(training_data_mat, row_adj_mat, col_adj_mat, eta, crf_iters, mf_preds){
   
   n_targets = ncol(training_data_mat)
   
@@ -229,9 +468,10 @@ train_crf = function(training_data_mat, row_adj_mat, col_adj_mat, eta, crf_iters
   eta = eta
   
   for (i in 1:crf_iters){
-    cat('iter ',i,'.. alpha: ',alpha_train,' row beta: ',row_beta_train,'\n')
-    cat('iter ',i,'.. col betas: ' , target_beta_train_list[[1]],' ',target_beta_train_list[[2]],' ',target_beta_train_list[[3]],' ',target_beta_train_list[[4]],'\n')
-    ans = get_Sigma_mu_train(training_data_mat = training_data_mat, X_vec = X_train, target_beta_train_list = target_beta_train_list, row_beta_train = row_beta_train, alpha_train = alpha_train)
+    #cat('iter ',i,'.. alpha: ',alpha_train,' row beta: ',row_beta_train,'\n')
+    #cat('iter ',i,'.. col betas: ' , target_beta_train_list[[1]],' ',target_beta_train_list[[2]],' ',target_beta_train_list[[3]],' ',target_beta_train_list[[4]],'\n')
+    #cat('iter ',i,'.. col betas: ' , target_beta_train_list[[1]],' ',target_beta_train_list[[2]],'\n')
+    ans = get_Sigma_mu_train(training_data_mat = training_data_mat, X_vec = X_train, target_beta_train_list = target_beta_train_list, row_beta_train = row_beta_train, alpha_train = alpha_train, row_adj_mat = row_adj_mat, col_adj_mat = col_adj_mat)
     Sigma = ans[[1]]
     mu = ans[[2]]
     
@@ -284,6 +524,155 @@ train_crf = function(training_data_mat, row_adj_mat, col_adj_mat, eta, crf_iters
   return(list(alpha_train, row_beta_train, target_beta_train_list))
 }
 
-make_prediction = function(params, X){
+make_prediction_2 = function(training_data_mat, target_beta, row_beta, alpha, mf_preds_columns, adj_mat_cols, adj_mat_rows){
+  
+  n_targets = ncol(training_data_mat)
+  A = matrix(0, nrow = n_drugs*n_targets, ncol = n_drugs*n_targets)
+  B = matrix(0, nrow = n_drugs*n_targets, ncol = n_drugs*n_targets)
+  
+  for (d in 1:n_drugs){
+    for (t in 1:n_targets){
+      row_neighbors = which(adj_mat_rows[d,]==1)
+      col_neighbors = which(adj_mat_cols[t,]==1)
+      temp_a = (d-1)*n_targets+t
+      for (rn in row_neighbors){
+        temp_b = (rn-1)*n_targets+t
+        B[temp_a,temp_b] = B[temp_a,temp_b] - target_beta[[t]]
+      }
+      for (cn in col_neighbors){
+        temp_b = (d-1)*n_targets+cn
+        B[temp_a,temp_b] = B[temp_a,temp_b] - row_beta
+      }
+      A[temp_a, temp_a] = sum(alpha)
+      nrow_neighbors = length(which(adj_mat_rows[d,]>0))
+      ncol_neighbors = length(which(adj_mat_cols[t,]>0))
+      sum = target_beta[[t]]*nrow_neighbors+row_beta*ncol_neighbors
+      B[temp_a, temp_a] = sum
+    }
+  }
+  
+  Sigma1 = 2*(A+B)
+  require("MASS")
+  temp = chol(Sigma1) 
+  Sigma = chol2inv(temp)
+  
+  X = as.vector(t(mf_preds_columns))
+  b = 2*X*alpha
+  
+  mu = Sigma%*%b
+  
+  unknown = which(as.vector(t(dt_mat_temp))<0)
+  known = which(as.vector(t(dt_mat_temp))>=0)
+  
+  Sigma12 = Sigma[unknown, known]
+  Sigma22 = Sigma[known, known]
+  Sigma221 = chol2inv(chol(Sigma22))
+  mu_ = mu[unknown] + Sigma12%*%Sigma221%*%(as.vector(t(dt_mat_temp))[known] - mu[known])
+  mu_all = rep(0, length(mu))
+  mu_all[unknown] = mu_
+  mu_all[known] = as.vector(t(dt_mat_temp))[known]
+  
+  pred_mat = matrix(mu_all, nrow = n_drugs, byrow = T)
+  
+  return (pred_mat)
+  
+}
+
+train_and_predict_2 = function(target_adj_mat, drug_adj_mat, dt_mat, target_set, mf_preds_train_mat, mf_preds_all_mat, test_ind, mix_dataset, crf_iters){
+  
+  crf_predictions = rep(NA, nrow(mix_dataset))
+  mf_predictions = rep(NA, nrow(mix_dataset))
+  
+  adj_mat_cols = target_adj_mat[target_set, target_set]
+  adj_mat_rows = drug_adj_mat
+  
+  dt_mat_temp = dt_mat[,target_set]
+  
+  mf_preds = mf_preds_train_mat[,target_set]
+  
+  cat('learning params..\n')
+  
+  params = train_crf_2(training_data_mat = dt_mat_temp, row_adj_mat = adj_mat_rows, col_adj_mat = adj_mat_cols, eta = 0.01, crf_iters = crf_iters, mf_preds = mf_preds)
+  
+  cat('learned params.. ',params[[1]],'.. ',params[[2]],'..\n')
+  cat('making prediction..\n')
+  
+  pred_mat = make_prediction_2(training_data_mat = dt_mat_temp, target_beta = params[[3]], row_beta = params[[2]], alpha = params[[1]], mf_preds_columns = mf_preds_all_mat[,target_set], adj_mat_cols = adj_mat_cols, adj_mat_rows = adj_mat_rows)
+  
+  for (t in target_set){
+    inds = which(mix_dataset[test_ind,2]==t)
+    drugs = mix_dataset[test_ind[inds],1]
+    labels = mix_dataset[test_ind[inds],3]
+    crf_predictions_test_col = pred_mat[drugs, match(t,target_set)]
+    ans1 = get_metrics(preds = crf_predictions_test_col, labels = labels, cutoff = 7)
+    mf_predictions_test_col = mf_preds_all_mat[drugs, t]
+    ans2 = get_metrics(preds = mf_predictions_test_col, labels = labels, cutoff = 7)
+    cat('target ',t,' ','RMSE mf ',ans2[[1]],' crf ',ans1[[1]],'\n')
+    cat('target ',t,' ','AUC mf ',ans2[[2]],' crf ',ans1[[2]],'\n')
+    cat('target ',t,' ','AUPR mf ',ans2[[3]],' crf ',ans1[[3]],'\n\n')
+    crf_predictions[test_ind[inds]] = crf_predictions_test_col
+    mf_predictions[test_ind[inds]] = mf_predictions_test_col
+  }
+  inds = which(!is.na(mf_predictions))
+  ans2 = get_metrics(mf_predictions[inds], mix_dataset[inds,3], 7)
+  ans1 = get_metrics(crf_predictions[inds], mix_dataset[inds,3], 7)
+  cat('all RMSE mf ',ans2[[1]],' crf ',ans1[[1]],'\n')
+  cat('all AUC mf ',ans2[[2]],' crf ',ans1[[2]],'\n')
+  cat('all AUPR mf ',ans2[[3]],' crf ',ans1[[3]],'\n\n')
+  
+}
+
+train_and_predict_single = function(mf_preds_train_mat, dt_mat, sim_mat, mix_dataset, mf_preds_all, target_set, test_ind, adj_mat){
+  
+  
+  crf_predictions = rep(NA, nrow(mix_dataset))
+  mf_predictions = rep(NA, nrow(mix_dataset))
+  
+  for (t in target_set){
+    
+    #cat('fold ',i,', target ',t,'... ',length(which(dt_mat[,t]>=0)),' observations\n')
+    
+    mf_pred_train_col_t = mf_preds_train_mat[which(!is.na(mf_preds_train_mat[,t])),t]
+    adj_mat_train_col_t = make_training_adj_mat_for_column(dt_mat, sim_mat, t)
+    training_vals_col_t = dt_mat[which(dt_mat[,t]>=0),t]
+    
+    if (length(which(dt_mat[,t]>=0))>500){
+      eta = 0.001
+    } else{
+      eta = 0.01
+    }
+    
+    params = train_crf_row(y = training_vals_col_t, X = mf_pred_train_col_t, adj_mat = adj_mat_train_col_t, crf_iters = 1000, eta = eta)  
+    cat('learned parameters: ', params[[1]], params[[2]],'\n')
+    
+    inds = which(mix_dataset[test_ind,2] == t)
+    labels_test_col = mix_dataset[test_ind[inds], 3]
+    mf_prediction_col = mf_preds_all[,t]
+    mf_prediction_test_col = mf_preds_all[cbind(mix_dataset[test_ind[inds],1],mix_dataset[test_ind[inds],2])]
+    mf_predictions[test_ind[inds]] = mf_prediction_test_col
+    
+    #cat('making crf predictions..\n')
+    
+    crf_prediction_col = make_crf_predictions_row(params[[1]], params[[2]], column = dt_mat[,t], adj_mat = adj_mat, X = mf_prediction_col)
+    crf_prediction_test_col = crf_prediction_col[mix_dataset[test_ind[inds],1]]
+    crf_predictions[test_ind[inds]] = crf_prediction_test_col
+    
+    mf_metrics = get_metrics(mf_prediction_test_col, labels_test_col, 7)
+    crf_metrics = get_metrics(crf_prediction_test_col, labels_test_col, 7)
+    
+    #cat('target rmse (mf, crf): ',mf_metrics[[1]],', ',crf_metrics[[1]],'\n')
+    #cat('target auc (mf, crf): ',mf_metrics[[2]],', ',crf_metrics[[2]],'\n')
+    #cat('target aupr (mf, crf): ',mf_metrics[[3]],', ',crf_metrics[[3]],'\n')
+    
+  }
+  
+  inds = which(!is.na(mf_predictions))
+  mf_metrics = get_metrics(mf_predictions[inds], mix_dataset[inds,3], 7)
+  crf_metrics = get_metrics(crf_predictions[inds], mix_dataset[inds,3], 7)
+  
+  cat('all test rmse (mf, crf) so far: ',round(mf_metrics[[1]], digits = 3),', ',round(crf_metrics[[1]], digits = 3),'\n')
+  cat('all test auc (mf, crf) so far: ',round(mf_metrics[[2]], digits = 3),', ',round(crf_metrics[[2]], digits = 3),'\n')
+  cat('all test aupr (mf, crf) so far: ',round(mf_metrics[[3]], digits = 3),', ',round(crf_metrics[[3]], digits = 3),'\n\n')
+  
   
 }
