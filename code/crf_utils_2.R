@@ -1,5 +1,6 @@
 require("MASS")
-
+source('recosystem.R')
+require('Matrix')
 get_folds = function(triplets, n_folds){
   
   n = nrow(triplets)
@@ -43,7 +44,7 @@ make_triplets = function(dataset_mat){
   return (dataset_triplets)
 }
 
-train_crf = function(training_data, adj_mats, X, crf_iters, eta){
+train_crf = function(training_data, adj_mats, X, crf_iters, eta, list_parameters_every_its){
   
   n = length(training_data)
   ## make Bk mats
@@ -65,7 +66,7 @@ train_crf = function(training_data, adj_mats, X, crf_iters, eta){
   }
   y_vec = training_data
   for (it in 1:crf_iters){
-    if ((it%%100)==0){
+    if ((it%%list_parameters_every_its)==0){
       cat('training iteration ',it,'\n')
       cat('alpha: ',alpha,'\n')
       for (k in 1:length(beta)){
@@ -135,13 +136,20 @@ crf_predict = function(train_data, X, alpha, adj_mats, beta){
       B = B-beta[[i]]*adj_mats[[i]]
     }
   }
-  for (i in 1:n){
-    sum = 0
-    for (k in 1:length(adj_mats)){
-      sum = sum+beta[[k]]*sum(adj_mats[[k]][i,])-beta[[k]]*adj_mats[[k]][i,i]
-    }
-    B[i,i] = sum
+  
+  sum = 0
+  for (k in 1:length(adj_mats)){
+    sum = sum+beta[[k]]*rowSums(adj_mats[[k]]) - beta[[k]]*diag(adj_mats[[k]])
   }
+  diag(B) = sum
+  
+#   for (i in 1:n){
+#     sum = 0
+#     for (k in 1:length(adj_mats)){
+#       sum = sum+beta[[k]]*sum(adj_mats[[k]][i,])-beta[[k]]*adj_mats[[k]][i,i]
+#     }
+#     B[i,i] = sum
+#   }
   
   Sigma1 = 2*(A+B)
   Sigma = chol2inv(chol(Sigma1))
@@ -262,6 +270,105 @@ get_libmf_prediction = function(train, iter){
   
 }
 
+## this function creates an adjacency mat for the training data in training_mat
+## training_mat is a matrix with the targets in target_set and the drugs in drug_set
+## training_mat contains NA for missing values
+make_training_adj_mat = function(train_mat, drug_adj_mat, target_adj_mat, drug_set, target_set){
+  
+  temp_adj_mat_drugs = matrix(0, nrow = nrow(train_mat)*ncol(train_mat), ncol = nrow(train_mat)*ncol(train_mat))
+  temp_adj_mat_targets = matrix(0, nrow = nrow(train_mat)*ncol(train_mat), ncol = nrow(train_mat)*ncol(train_mat))
+  
+  ##integrate the target similarities
+  for (i in 1:nrow(train_mat)){
+    from = (i-1)*ncol(train_mat)+1
+    to = i*ncol(train_mat)
+    temp_adj_mat_targets[from:to,from:to] = target_adj_mat[target_set, target_set]
+  }
+  ## integrate the drug similarities
+  for (i in 1:ncol(train_mat)){
+    from = i
+    to = (nrow(train_mat)-1)*ncol(train_mat)+i
+    temp = seq(from = from, to = to, by = ncol(train_mat))
+    temp_adj_mat_drugs[temp,temp] = drug_adj_mat[drug_set, drug_set]
+  }
+  
+  inds = which(t(train_mat)>=0)
+  temp_adj_mat_drugs = temp_adj_mat_drugs[inds,inds]
+  inds = which(temp_adj_mat_drugs>0, arr.ind = T)
+  sparse_adj_mat_drugs = sparseMatrix(i = inds[,1], j = inds[,2], x = temp_adj_mat_drugs[inds], dims = dim(temp_adj_mat_drugs))
+  
+  inds = which(t(train_mat)>=0)
+  temp_adj_mat_targets = temp_adj_mat_targets[inds,inds]
+  inds = which(temp_adj_mat_targets>0, arr.ind = T)
+  sparse_adj_mat_targets = sparseMatrix(i = inds[,1], j = inds[,2], x = temp_adj_mat_targets[inds], dims = dim(temp_adj_mat_targets))
+  
+  return (list(sparse_adj_mat_drugs, sparse_adj_mat_targets))
+  
+}
+
+make_prediction_adj_mat = function(train_mat, drug_adj_mat, target_adj_mat, drug_set, target_set){
+  
+  
+  temp_adj_mat_drugs = matrix(0, nrow = nrow(train_mat)*ncol(train_mat), ncol = nrow(train_mat)*ncol(train_mat))
+  temp_adj_mat_targets = matrix(0, nrow = nrow(train_mat)*ncol(train_mat), ncol = nrow(train_mat)*ncol(train_mat))
+  
+  ##integrate the target similarities
+  for (i in 1:nrow(train_mat)){
+    from = (i-1)*ncol(train_mat)+1
+    to = i*ncol(train_mat)
+    temp_adj_mat_targets[from:to,from:to] = target_adj_mat[target_set, target_set]
+  }
+  ## integrate the drug similarities
+  for (i in 1:ncol(train_mat)){
+    from = i
+    to = (nrow(train_mat)-1)*ncol(train_mat)+i
+    temp = seq(from = from, to = to, by = ncol(train_mat))
+    temp_adj_mat_drugs[temp,temp] = drug_adj_mat[drug_set, drug_set]
+  }
+  
+  inds = which(temp_adj_mat_drugs>0, arr.ind = T)
+  sparse_adj_mat_drugs = sparseMatrix(i = inds[,1], j = inds[,2], x = temp_adj_mat_drugs[inds], dims = dim(temp_adj_mat_drugs))
+  
+  inds = which(temp_adj_mat_targets>0, arr.ind = T)
+  sparse_adj_mat_targets = sparseMatrix(i = inds[,1], j = inds[,2], x = temp_adj_mat_targets[inds], dims = dim(temp_adj_mat_targets))
+  
+  return (list(sparse_adj_mat_drugs, sparse_adj_mat_targets))
+  
+}
+
+get_metrics = function(preds, labels, cutoff){
+  rmse = sqrt(mean((preds - labels)^2))
+  aupr.val = NA
+  if (length(which(labels>=cutoff))>0 && length(preds)>1 && length(which(labels<cutoff))>0){
+    
+    pred.obj = ROCR::prediction(preds, as.numeric(labels>=cutoff))
+    auc.obj = ROCR::performance(pred.obj, measure = 'auc')
+    prec.obj = ROCR::performance(pred.obj, measure = 'prec')
+    rec.obj = ROCR::performance(pred.obj, measure = 'rec')
+    prec.val = prec.obj@y.values[[1]]
+    rec.val = rec.obj@y.values[[1]]
+    auc.val = auc.obj@y.values[[1]]
+    
+    if (is.na(prec.val[1])){
+      prec.val[1] = 1
+    }
+    
+    ## comment this out if aupr computation crashes
+    func = approxfun(cbind(rec.val,prec.val), yleft = 1)
+    #aupr.val = integrate(func, 0, 1, subdivisions = 1000L)$value
+    #tryCatch(integrate(func, 0, 1, subdivisions = 1000L)$value, finally = (aupr.val = NA))
+    try((aupr.val = integrate(func, 0, 1, subdivisions = 1000L)$value), silent = TRUE)
+    ##
+  } else {
+    auc.val=NA
+    aupr.val=NA
+  }
+  
+  #return(list(rmse,auc.val,NA))
+  return(list(rmse,auc.val,aupr.val))
+  
+}
+
 dataset = read.table('../data/known_drug-target_interaction_affinities_pKi__Metz_et_al.2011.txt')
 dataset = as.matrix(dataset)
 
@@ -279,56 +386,157 @@ target_sim = as.matrix(target_sim)
 target_sim = target_sim/100
 
 target_adj_mat = make_adj_mat_thresh(sim_mat = target_sim, thresh = 0.66, FALSE)
-drug_adj_mat = make_adj_mat_thresh(sim_mat = drug_sim, thresh = 0.75, TRUE)
+drug_adj_mat = make_adj_mat_thresh(sim_mat = drug_sim, thresh = 0.9, TRUE)
 
 n_folds = 5
 test_folds = get_folds(dataset_triplets, n_folds)
 
-fold = 1
-test_ind = test_folds[[fold]]
-train_ind = setdiff(1:nrow(dataset_triplets),test_ind)
-
-train_mat = matrix(-1, nrow = n_drugs, ncol = n_targets)
-train_mat[dataset_triplets[train_ind,c(1,2)]] = dataset_triplets[train_ind,3]
-
-c('getting MF predictions for train data.. \n')
-mf_preds_train = get_mf_cv(train_mat, 400)
-mf_preds_train_mat = mf_preds_train[[2]]
-
-cat('getting MF predictions for complete matrix..\n')
-mf_preds_all = get_libmf_prediction(train_mat, 400)
-
-## train crf for column 26
-
+#target crfs
 crf_predictions = rep(NA, nrow(dataset_triplets))
-for (t in 1:n_targets){
+for (fold in 1:n_folds){
   
-  cat('target ',t,'... ',length(which(train_mat[,t]>=0)),' observations\n')
+  test_ind = test_folds[[fold]]
+  train_ind = setdiff(1:nrow(dataset_triplets),test_ind)
   
-  if (length(which(train_mat[,t]>=0))>1){
+  train_mat = matrix(-1, nrow = n_drugs, ncol = n_targets)
+  train_mat[dataset_triplets[train_ind,c(1,2)]] = dataset_triplets[train_ind,3]
+  
+  cat('getting MF predictions for train data.. \n')
+  mf_preds_train = get_mf_cv(train_mat, 400)
+  mf_preds_train_mat = mf_preds_train[[2]]
+  
+  cat('getting MF predictions for complete matrix..\n')
+  mf_preds_all = get_libmf_prediction(train_mat, 400)
+  
+  #for (t in 1:n_targets){
+  for (t in c(58,62,75,79,143)){
+    cat('target ',t,'... ',length(which(train_mat[,t]>=0)),' observations\n')
     
-    training_data = train_mat[which(train_mat[,t]>0), t]
-    inds = which(train_mat[,t]>=0)
-    training_adj_mat = drug_adj_mat[inds,inds]
-    inds = which(training_adj_mat>0, arr.ind = T)
-    training_adj_mat = sparseMatrix(i = inds[,1], j = inds[,2], x = training_adj_mat[inds], dims = dim(training_adj_mat))
-    X = mf_preds_train_mat[which(!is.na(mf_preds_train_mat[,t])),t]
+    if (length(which(train_mat[,t]>=0))>1){
+      
+      training_data = train_mat[which(train_mat[,t]>0), t]
+      inds = which(train_mat[,t]>=0)
+      training_adj_mat = drug_adj_mat[inds,inds]
+      inds = which(training_adj_mat>0, arr.ind = T)
+      training_adj_mat = sparseMatrix(i = inds[,1], j = inds[,2], x = training_adj_mat[inds], dims = dim(training_adj_mat))
+      X = mf_preds_train_mat[which(!is.na(mf_preds_train_mat[,t])),t]
+      
+      adj_mats = list()
+      adj_mats[[1]] = training_adj_mat
+      params = train_crf(training_data = training_data, adj_mats = adj_mats, X = X, crf_iters = 600, eta = 0.004, 100)
+      
+      adj_mats = list()
+      adj_mats[[1]] = drug_adj_mat
+      prediction = crf_predict(train_data = train_mat[,t], X = mf_preds_all[,t], alpha = params[[1]], adj_mats = adj_mats, beta = params[[2]])
+      
+      inds = which(dataset_triplets[test_ind,2] == t)
+      crf_predictions[test_ind[inds]] = prediction[dataset_triplets[test_ind[inds],1]]
+      
+      
+    } else {
+      inds = which(dataset_triplets[test_ind,2] == t)
+      crf_predictions[test_ind[inds]] = mf_preds_all[dataset_triplets[test_ind[inds],1],t]
+    }
     
-    adj_mats = list()
-    adj_mats[[1]] = training_adj_mat
-    params = train_crf(training_data = training_data, adj_mats = adj_mats, X = X, crf_iters = 400, eta = 0.008)
+    inds = which(!is.na(crf_predictions))
+    crf_metrics = get_metrics(crf_predictions[inds], dataset_triplets[inds,3], 7.6)
     
-    adj_mats = list()
-    adj_mats[[1]] = drug_adj_mat
-    prediction = crf_predict(train_data = train_mat[,t], X = mf_preds_all[,t], alpha = params[[1]], adj_mats = adj_mats, beta = params[[2]])
+    cat('auc so far, crf: ',round(crf_metrics[[2]], digits = 5),'\n')
+    cat('aupr so far, crf: ',round(crf_metrics[[3]], digits = 5),'\n\n')
     
-    inds = which(dataset_triplets[test_ind,2] == t)
-    crf_predictions[test_ind[inds]] = prediction[dataset_triplets[test_ind[inds],1]]
+  }
+  
+}
 
+## drug crfs
+crf_predictions = rep(NA, nrow(dataset_triplets))
+for (fold in 1:n_folds){
+  
+  test_ind = test_folds[[fold]]
+  train_ind = setdiff(1:nrow(dataset_triplets),test_ind)
+  
+  train_mat = matrix(-1, nrow = n_drugs, ncol = n_targets)
+  train_mat[dataset_triplets[train_ind,c(1,2)]] = dataset_triplets[train_ind,3]
+  
+  cat('getting MF predictions for train data.. \n')
+  mf_preds_train = get_mf_cv(train_mat, 400)
+  mf_preds_train_mat = mf_preds_train[[2]]
+  
+  cat('getting MF predictions for complete matrix..\n')
+  mf_preds_all = get_libmf_prediction(train_mat, 400)
+  
+  for (d in 1:n_drugs){
+    cat('drug ',d,'... ',length(which(train_mat[d,]>=0)),' observations\n')
     
-  } else {
-    inds = which(dataset_triplets[test_ind,2] == t)
-    crf_predictions[test_ind[inds]] = mf_preds_all[dataset_triplets[test_ind[inds],1],t]
+    if (length(which(train_mat[d,]>=0))>1){
+      
+      training_data = train_mat[d, which(train_mat[d,]>0)]
+      inds = which(train_mat[d,]>=0)
+      training_adj_mat = target_adj_mat[inds,inds]
+      inds = which(training_adj_mat>0, arr.ind = T)
+      training_adj_mat = sparseMatrix(i = inds[,1], j = inds[,2], x = training_adj_mat[inds], dims = dim(training_adj_mat))
+      X = mf_preds_train_mat[d, which(!is.na(mf_preds_train_mat[d,]))]
+      
+      adj_mats = list()
+      adj_mats[[1]] = training_adj_mat
+      params = train_crf(training_data = training_data, adj_mats = adj_mats, X = X, crf_iters = 600, eta = 0.02)
+      
+      adj_mats = list()
+      adj_mats[[1]] = target_adj_mat
+      prediction = crf_predict(train_data = train_mat[d,], X = mf_preds_all[d,], alpha = params[[1]], adj_mats = adj_mats, beta = params[[2]])
+      
+      inds = which(dataset_triplets[test_ind,1] == d)
+      crf_predictions[test_ind[inds]] = prediction[dataset_triplets[test_ind[inds],2]]
+      
+    } else {
+      inds = which(dataset_triplets[test_ind,1] == d)
+      crf_predictions[test_ind[inds]] =  mf_preds_all[d, dataset_triplets[test_ind[inds],2]]
+    }
+    
+    inds = which(!is.na(crf_predictions))
+    crf_metrics = get_metrics(crf_predictions[inds], dataset_triplets[inds,3], 7.6)
+    
+    cat('auc so far, crf: ',round(crf_metrics[[2]], digits = 5),'\n')
+    cat('aupr so far, crf: ',round(crf_metrics[[3]], digits = 5),'\n\n')
+    
+  }
+  
+}
+
+## train crf for columns 10, 53, 10, 19
+crf_predictions = rep(NA, nrow(dataset_triplets))
+for (fold in 1:n_folds){
+  
+  test_ind = test_folds[[fold]]
+  train_ind = setdiff(1:nrow(dataset_triplets),test_ind)
+  
+  train_mat = matrix(-1, nrow = n_drugs, ncol = n_targets)
+  train_mat[dataset_triplets[train_ind,c(1,2)]] = dataset_triplets[train_ind,3]
+  
+  cat('getting MF predictions for train data.. \n')
+  mf_preds_train = get_mf_cv(train_mat, 400)
+  mf_preds_train_mat = mf_preds_train[[2]]
+  
+  cat('getting MF predictions for complete matrix..\n')
+  mf_preds_all = get_libmf_prediction(train_mat, 400)
+  
+  target_set = c(58,62,75,79,143)
+  train_data = t(train_mat[,target_set])[which(t(train_mat[,target_set])>=0)]
+  X = t(mf_preds_train_mat[,target_set])[which(!is.na(t(mf_preds_train_mat[,target_set])))]
+  training_adj_mats = make_training_adj_mat(train_mat = train_mat[,target_set], drug_adj_mat = drug_adj_mat, target_adj_mat = target_adj_mat, drug_set = c(1:n_drugs), target_set = target_set)
+  params = train_crf(training_data = train_data, adj_mats = training_adj_mats, X = X, crf_iters = 600, eta = 0.004, 20)
+  
+  X = as.vector(t(mf_preds_all[,target_set]))
+  prediction_adj_mats = make_prediction_adj_mat(train_mat = train_mat[,target_set], drug_adj_mat = drug_adj_mat, target_adj_mat = target_adj_mat, drug_set = c(1:n_drugs), target_set = target_set)
+  prediction = crf_predict(train_data = as.vector(t(train_mat[,target_set])), X = X, alpha = params[[1]], adj_mats = prediction_adj_mats, beta = params[[2]])
+  
+  prediction_mat = matrix(prediction, nrow = n_drugs, byrow = T)
+  for (t in target_set){
+    inds = which(dataset_triplets[test_ind,2]==t)
+    drugs = dataset_triplets[test_ind[inds],1]
+    labels = dataset_triplets[test_ind[inds],3]
+    crf_predictions_test_col = prediction_mat[drugs, match(t,target_set)]
+    crf_predictions[test_ind[inds]] = crf_predictions_test_col
   }
   
   inds = which(!is.na(crf_predictions))
@@ -339,9 +547,7 @@ for (t in 1:n_targets){
   
 }
 
-## train crf for row 142
 
-## train crf for columns 10, 53, 10, 19
 
 ## train crf for rows 19, 294, 1200, 1
 
