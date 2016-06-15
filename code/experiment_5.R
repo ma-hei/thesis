@@ -29,13 +29,12 @@ mf_preds_train_mat = mf_preds_train[[2]]
 cat('getting MF predictions for complete matrix..\n')
 mf_preds_all = get_libmf_prediction(dt_mat, 400)
 
-sim_mat = target_sim
-adj_mat = target_adj_mat
-
 sim_mat = drug_sim
 adj_mat = drug_adj_mat
 
 for (t in 1:n_targets){
+  
+#for (t in c(65,171)){
   
   cat('fold ',i,', target ',t,'... ',length(which(dt_mat[,t]>=0)),' observations\n')
   
@@ -43,6 +42,8 @@ for (t in 1:n_targets){
   adj_mat_train_col_t = make_training_adj_mat_for_column(dt_mat, sim_mat, t)
   training_vals_col_t = dt_mat[which(dt_mat[,t]>=0),t]
   
+  
+  cat(length(which(adj_mat_train_col_t>0)),'\n')
   if (length(which(dt_mat[,t]>=0))>500){
     eta = 0.001
   } else{
@@ -75,8 +76,8 @@ for (t in 1:n_targets){
   mf_metrics = get_metrics(mf_predictions[inds], mix_dataset[inds,3], 7)
   crf_metrics = get_metrics(crf_predictions[inds], mix_dataset[inds,3], 7)
   
-  cat('all test rmse (mf, crf) so far: ',round(mf_metrics[[1]], digits = 2),', ',round(crf_metrics[[1]], digits = 2),'\n')
-  cat('all test auc (mf, crf) so far: ',round(mf_metrics[[2]], digits = 2),', ',round(crf_metrics[[2]], digits = 2),'\n')
-  cat('all test aupr (mf, crf) so far: ',round(mf_metrics[[3]], digits = 2),', ',round(crf_metrics[[3]], digits = 2),'\n\n')
+  cat('all test rmse (mf, crf) so far: ',round(mf_metrics[[1]], digits = 3),', ',round(crf_metrics[[1]], digits = 3),'\n')
+  cat('all test auc (mf, crf) so far: ',round(mf_metrics[[2]], digits = 3),', ',round(crf_metrics[[2]], digits = 3),'\n')
+  cat('all test aupr (mf, crf) so far: ',round(mf_metrics[[3]], digits = 3),', ',round(crf_metrics[[3]], digits = 3),'\n\n')
   
 }

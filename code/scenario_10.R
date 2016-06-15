@@ -9,26 +9,24 @@ for (i in 1:10){
   target_beta[[i]] = 5
 }
 for (i in 11:20){
-  target_beta[[i]] = 1
+  target_beta[[i]] = 5
 }
 for (i in 21:30){
-  target_beta[[i]] = 5
+  target_beta[[i]] = 0.001
 }
 for (i in 31:40){
-  target_beta[[i]] = 5
+  target_beta[[i]] = 3
 }
 for (i in 41:50){
-  target_beta[[i]] = 5
+  target_beta[[i]] = 3
 }
 for (i in 51:60){
   target_beta[[i]] = 0.005
 }
-for (i in 61:404){
-  target_beta[[i]] = 0.01
-}
 
 # I have 50 different adjacency mats.. one for each column
 # make it into 1
+
 row_adj_mat = matrix(0, nrow = n_drugs, ncol = n_drugs)
 for (i in 2:10){
   row_adj_mat[1,i] = 1
@@ -51,7 +49,7 @@ col_adj_mat[4,1] = 1
 row_beta = 1
 
 # one alpha
-alpha = 0.01
+alpha = 1
 
 # create matrices A and B
 A = matrix(0, nrow = n_drugs*n_targets, ncol = n_drugs*n_targets)
@@ -334,4 +332,4 @@ for (i in 1:1000){
   }
 }
 
-
+train_crf(training_data_mat = training_data, row_adj_mat = row_adj_mat, col_adj_mat = col_adj_mat, eta = 0.01, crf_iters = 200)

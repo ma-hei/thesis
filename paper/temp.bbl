@@ -1,0 +1,75 @@
+\providecommand{\latin}[1]{#1}
+\providecommand*\mcitethebibliography{\thebibliography}
+\csname @ifundefined\endcsname{endmcitethebibliography}
+  {\let\endmcitethebibliography\endthebibliography}{}
+\begin{mcitethebibliography}{7}
+\providecommand*\natexlab[1]{#1}
+\providecommand*\mciteSetBstSublistMode[1]{}
+\providecommand*\mciteSetBstMaxWidthForm[2]{}
+\providecommand*\mciteBstWouldAddEndPuncttrue
+  {\def\EndOfBibitem{\unskip.}}
+\providecommand*\mciteBstWouldAddEndPunctfalse
+  {\let\EndOfBibitem\relax}
+\providecommand*\mciteSetBstMidEndSepPunct[3]{}
+\providecommand*\mciteSetBstSublistLabelBeginEnd[3]{}
+\providecommand*\EndOfBibitem{}
+\mciteSetBstSublistMode{f}
+\mciteSetBstMaxWidthForm{subitem}{(\alph{mcitesubitemcount})}
+\mciteSetBstSublistLabelBeginEnd
+  {\mcitemaxwidthsubitemform\space}
+  {\relax}
+  {\relax}
+
+\bibitem[Ding \latin{et~al.}(2013)Ding, Takigawa, Mamitsuka, and
+  Zhu]{ding2013similarity}
+Ding,~H.; Takigawa,~I.; Mamitsuka,~H.; Zhu,~S. \emph{Briefings in
+  Bioinformatics} \textbf{2013}, bbt056\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\bibitem[Pahikkala \latin{et~al.}(2014)Pahikkala, Airola, Pietil{\"a},
+  Shakyawar, Szwajda, Tang, and Aittokallio]{pahikkala2014toward}
+Pahikkala,~T.; Airola,~A.; Pietil{\"a},~S.; Shakyawar,~S.; Szwajda,~A.;
+  Tang,~J.; Aittokallio,~T. \emph{Briefings in bioinformatics} \textbf{2014},
+  bbu010\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\bibitem[Davis \latin{et~al.}(2011)Davis, Hunt, Herrgard, Ciceri, Wodicka,
+  Pallares, Hocker, Treiber, and Zarrinkar]{davis2011comprehensive}
+Davis,~M.~I.; Hunt,~J.~P.; Herrgard,~S.; Ciceri,~P.; Wodicka,~L.~M.;
+  Pallares,~G.; Hocker,~M.; Treiber,~D.~K.; Zarrinkar,~P.~P. \emph{Nature
+  biotechnology} \textbf{2011}, \emph{29}, 1046--1051\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\bibitem[Metz \latin{et~al.}(2011)Metz, Johnson, Soni, Merta, Kifle, and
+  Hajduk]{metz2011navigating}
+Metz,~J.~T.; Johnson,~E.~F.; Soni,~N.~B.; Merta,~P.~J.; Kifle,~L.;
+  Hajduk,~P.~J. \emph{Nature chemical biology} \textbf{2011}, \emph{7},
+  200--202\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\bibitem[Yang \latin{et~al.}(2013)Yang, Xu, and Zeng]{yang2013drug}
+Yang,~F.; Xu,~J.; Zeng,~J. Drug-target interaction prediction by integrating
+  chemical, genomic, functional and pharmacological data. Pacific Symposium on
+  Biocomputing. 2013; pp 2304--2310\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\bibitem[Tang \latin{et~al.}(2014)Tang, Szwajda, Shakyawar, Xu, Hintsanen,
+  Wennerberg, and Aittokallio]{doi:10.1021/ci400709d}
+Tang,~J.; Szwajda,~A.; Shakyawar,~S.; Xu,~T.; Hintsanen,~P.; Wennerberg,~K.;
+  Aittokallio,~T. \emph{Journal of Chemical Information and Modeling}
+  \textbf{2014}, \emph{54}, 735--743, PMID: 24521231\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\end{mcitethebibliography}

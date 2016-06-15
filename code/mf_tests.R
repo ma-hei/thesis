@@ -22,7 +22,7 @@ for (i in 1:k) {
   trind = setdiff(1:n,teind)
   res = libmf(train.triplet[trind,], m = n_drugs, n = n_targets, k = 20, cost = 0.01, lrate = 0.01,
               
-              niter = 100, nthread = 1, nmf = FALSE, verbose = FALSE)
+              niter = 500, nthread = 1, nmf = FALSE, verbose = FALSE)
   
   P = res[[2]][[1]]
   Q = res[[2]][[2]]

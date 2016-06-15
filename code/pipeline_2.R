@@ -255,7 +255,10 @@ train_crf_dual_simple = function(training_data_mat, row_adj_mat, col_adj_mat, mf
   
   for (it in 1:crf_iters){
     
-    cat('iteration ',it,'.. alpha ',alpha_train,' row beta ',row_beta_train,' col beta ',col_beta_train,'\n')
+    if ((it%%50)==0){
+      cat('iteration ',it,'.. alpha ',alpha_train,' row beta ',row_beta_train,' col beta ',col_beta_train,'\n')
+    }
+    #cat('iteration ',it,'.. alpha ',alpha_train,' row beta ',row_beta_train,' col beta ',col_beta_train,'\n')
     
     ans = get_gaussian_train_simple(training_data_mat = training_data_mat, X_vec = X_train, alpha_train = alpha_train, row_beta_train = row_beta_train, col_beta_train = col_beta_train, B_row = B_row, B_col = B_col)
     Sigma = ans[[1]]
@@ -308,29 +311,49 @@ simple_crf_predict = function(training_data_mat, row_adj_mat, col_adj_mat, alpha
   n_drugs = nrow(training_data_mat)
   n_targets = ncol(training_data_mat)
   
-  A = matrix(0, nrow = n_drugs*n_targets, ncol = n_drugs*n_targets)
-  B = matrix(0, nrow = n_drugs*n_targets, ncol = n_drugs*n_targets)
-  
+  #A = matrix(0, nrow = n_drugs*n_targets, ncol = n_drugs*n_targets)
+  #B = matrix(0, nrow = n_drugs*n_targets, ncol = n_drugs*n_targets)
+  n_triplets_B = length(which(row_adj_mat>0))*n_targets + length(which(col_adj_mat>0))*n_drugs + n_drugs*n_targets
+  n_triplets_A = n_drugs*n_targets
+  triplets_A = matrix(0, nrow = n_triplets_A, ncol = 3)
+  triplets_B = matrix(0, nrow = n_triplets_B, ncol = 3)
+  counter_A = 1
+  counter_B = 1
   for (d in 1:n_drugs){
     for (t in 1:n_targets){
+      
       row_neighbors = which(row_adj_mat[d,]==1)
       col_neighbors = which(col_adj_mat[t,]==1)
       temp_a = (d-1)*n_targets+t
       for (rn in row_neighbors){
         temp_b = (rn-1)*n_targets+t
-        B[temp_a,temp_b] = B[temp_a,temp_b] - col_beta
+      #  B[temp_a,temp_b] = B[temp_a,temp_b] - col_beta
+      #  triplets_B = rbind(triplets_B, c(temp_a, temp_b, -col_beta))
+        triplets_B[counter_B,] = c(temp_a, temp_b, -col_beta)
+        counter_B = counter_B+1
       }
       for (cn in col_neighbors){
         temp_b = (d-1)*n_targets+cn
-        B[temp_a,temp_b] = B[temp_a,temp_b] - row_beta
+      #  B[temp_a,temp_b] = B[temp_a,temp_b] - row_beta
+      #  triplets_B = rbind(triplets_B, c(temp_a, temp_b, -row_beta))
+        triplets_B[counter_B,] = c(temp_a, temp_b, -row_beta)
+        counter_B = counter_B+1
       }
-      A[temp_a, temp_a] = alpha
+      #A[temp_a, temp_a] = alpha
       nrow_neighbors = length(which(row_adj_mat[d,]>0))
       ncol_neighbors = length(which(col_adj_mat[t,]>0))
       sum = col_beta*nrow_neighbors+row_beta*ncol_neighbors
-      B[temp_a, temp_a] = sum
+      #B[temp_a, temp_a] = sum
+      #triplets_B = rbind(triplets_B, c(temp_a, temp_a, sum))
+      #triplets_A = rbind(triplets_A, c(temp_a, temp_a, alpha))
+      triplets_A[counter_A,] = c(temp_a, temp_a, alpha)
+      triplets_B[counter_B,] = c(temp_a, temp_a, sum)
+      counter_B = counter_B+1
+      counter_A = counter_A+1
     }
   }
+  A = sparseMatrix(i = triplets_A[,1], j = triplets_A[,2], x = triplets_A[,3])
+  B = sparseMatrix(i = triplets_B[,1], j = triplets_B[,2], x = triplets_B[,3])
   
   Sigma1 = 2*(A+B)
   #require("MASS")
@@ -338,7 +361,7 @@ simple_crf_predict = function(training_data_mat, row_adj_mat, col_adj_mat, alpha
   #Sigma = chol2inv(temp)
   inds = which(Sigma1!=0, arr.ind = T)
   sm = sparseMatrix(i = inds[,1], j = inds[,2], x = Sigma1[inds])
-  Sigma = as.matrix(chol2inv(chol(sm)))
+  Sigma = chol2inv(chol(sm))
   
   X = as.vector(t(X_mat))
   b = 2*X*alpha
@@ -353,7 +376,7 @@ simple_crf_predict = function(training_data_mat, row_adj_mat, col_adj_mat, alpha
   Sigma221 = chol2inv(chol(Sigma22))
   mu_ = mu[unknown] + Sigma12%*%Sigma221%*%(as.vector(t(training_data_mat))[known] - mu[known])
   mu_all = rep(0, length(mu))
-  mu_all[unknown] = mu_
+  mu_all[unknown] = as.vector(mu_)
   mu_all[known] = as.vector(t(dt_mat_temp))[known]
   
   pred_mat = matrix(mu_all, nrow = n_drugs, byrow = T)
@@ -622,7 +645,7 @@ train_and_predict_2 = function(target_adj_mat, drug_adj_mat, dt_mat, target_set,
   
 }
 
-train_and_predict_single = function(mf_preds_train_mat, dt_mat, sim_mat, mix_dataset, mf_preds_all, target_set, test_ind, adj_mat){
+train_and_predict_single = function(mf_preds_train_mat, dt_mat, sim_mat, mix_dataset, mf_preds_all, target_set, test_ind, adj_mat, crf_iters){
   
   
   crf_predictions = rep(NA, nrow(mix_dataset))
@@ -630,7 +653,7 @@ train_and_predict_single = function(mf_preds_train_mat, dt_mat, sim_mat, mix_dat
   
   for (t in target_set){
     
-    #cat('fold ',i,', target ',t,'... ',length(which(dt_mat[,t]>=0)),' observations\n')
+    cat('fold ',i,', target ',t,'... ',length(which(dt_mat[,t]>=0)),' observations\n')
     
     mf_pred_train_col_t = mf_preds_train_mat[which(!is.na(mf_preds_train_mat[,t])),t]
     adj_mat_train_col_t = make_training_adj_mat_for_column(dt_mat, sim_mat, t)
@@ -642,7 +665,7 @@ train_and_predict_single = function(mf_preds_train_mat, dt_mat, sim_mat, mix_dat
       eta = 0.01
     }
     
-    params = train_crf_row(y = training_vals_col_t, X = mf_pred_train_col_t, adj_mat = adj_mat_train_col_t, crf_iters = 1000, eta = eta)  
+    params = train_crf_row(y = training_vals_col_t, X = mf_pred_train_col_t, adj_mat = adj_mat_train_col_t, crf_iters = crf_iters, eta = eta)  
     cat('learned parameters: ', params[[1]], params[[2]],'\n')
     
     inds = which(mix_dataset[test_ind,2] == t)
@@ -674,5 +697,6 @@ train_and_predict_single = function(mf_preds_train_mat, dt_mat, sim_mat, mix_dat
   cat('all test auc (mf, crf) so far: ',round(mf_metrics[[2]], digits = 3),', ',round(crf_metrics[[2]], digits = 3),'\n')
   cat('all test aupr (mf, crf) so far: ',round(mf_metrics[[3]], digits = 3),', ',round(crf_metrics[[3]], digits = 3),'\n\n')
   
+  return (list(crf_predictions, mf_predictions))
   
 }

@@ -409,7 +409,7 @@ train_crf_row = function(y, X, adj_mat, crf_iters, eta){
   
   for (it in 1:crf_iters){
     
-    #cat('training iteration ',it,':',alpha,' ',beta,'\n')
+    cat('training iteration ',it,':',alpha,' ',beta,'\n')
     if ((it%%40)==0){
       cat('training iteration ',it,':',alpha,' ',beta,'\n')
     }
@@ -430,8 +430,8 @@ train_crf_row = function(y, X, adj_mat, crf_iters, eta){
     alpha = exp(log_alpha)
     beta = exp(log_beta)
     
-    if (beta>100){
-      beta = 100
+    if (beta>10){
+      beta = 10
     }
     
     if (abs(alpha_old-alpha)<0.00001 && abs(beta_old-beta)<0.00001){
@@ -661,7 +661,7 @@ get_crf_prediction = function(Sigma, mu, train){
   mu_ = mu[unknown] + Sigma12%*%Sigma221%*%(as.vector(t(train))[known] - mu[known])
   
   mu_all = rep(0, length(mu))
-  mu_all[unknown] = mu_
+  mu_all[unknown] = as.vector(mu_)
   mu_all[known] = as.vector(t(train))[known]
   
   mat = matrix(mu_all, nrow = n_drugs, byrow=T)
@@ -978,12 +978,6 @@ make_crf_predictions_for_row = function(alpha, beta, train, adj_mat, X, col){
   
 }
 
-make_crf_predictions_col = function(alpha, beta, column, adj_mat, X){
-  
-  n_targets = nrow(adj_mat)
-  
-}
-
 make_crf_predictions_row = function(alpha, beta, column, adj_mat, X){
   
   n_drugs = nrow(adj_mat)
@@ -991,22 +985,34 @@ make_crf_predictions_row = function(alpha, beta, column, adj_mat, X){
   A = matrix(0, nrow = n_drugs, ncol = n_drugs)
   B = matrix(0, nrow = n_drugs, ncol = n_drugs)
   
+  #for (i in 1:n_drugs){
+  #  for (j in 1:n_drugs){
+  #    if (i==j){
+  #      A[i,j] = sum(alpha)
+  #      B[i,j] = beta*sum(adj_mat[i,])
+  #    } else {
+  #      B[i,j] = -beta*adj_mat[i,j]
+  #    }
+  #  }
+  #}
+  
   for (i in 1:n_drugs){
-    for (j in 1:n_drugs){
-      if (i==j){
-        A[i,j] = sum(alpha)
-        B[i,j] = beta*sum(adj_mat[i,])
-      } else {
-        B[i,j] = -beta*adj_mat[i,j]
-      }
+    A[i,i] = sum(alpha)
+    B[i,i] = beta*sum(adj_mat[i,])
+    neighbors = which(adj_mat[i,]>0)
+    for (n in neighbors){
+      B[i,n] = -beta
     }
   }
   
   cat('inverting matrix..\n')
   Sigma1 = 2*(A+B)
   require("MASS")
-  temp = chol(Sigma1) 
-  Sigma = chol2inv(temp)
+  inds = which(Sigma1!=0, arr.ind = T)
+  sm = sparseMatrix(i = inds[,1], j = inds[,2], x = Sigma1[inds])
+  #temp = chol(Sigma1) 
+  Sigma = chol2inv(chol(sm))
+  #Sigma = chol2inv(temp)
   
   b = 2*X*alpha
   mu = Sigma%*%b
@@ -1033,17 +1039,18 @@ get_folds = function(triplets, n_folds){
   
 }
 
-make_adjacency_mat = function(simi_mat){
+make_adjacency_mat = function(sim_mat){
   
-  n_drugs = nrow(simi_mat)
+  n_drugs = nrow(sim_mat)
   
   adj_mat = matrix(0, nrow = n_drugs, ncol = n_drugs)
   for (i in 1:n_drugs){
-    inds = which(simi_mat[i,]>0.9 & simi_mat[i,]<1)
+    inds = which(sim_mat[i,]>0.9 & sim_mat[i,]<1)
     #inds = order(simi_mat[i,], decreasing = T)[2:5]
-    if (length(inds)<4){
-      inds = order(simi_mat[i,], decreasing = T)[2:5]
-    }
+    #if (length(inds)<4){
+    #  inds = order(sim_mat[i,], decreasing = T)[1:5]
+    #  inds = setdiff(inds, i)
+    #}
     adj_mat[i, inds] = 1
     adj_mat[inds,i ] = 1
     #adj_mat[i, inds] = simi_mat[i, inds]
@@ -1054,7 +1061,6 @@ make_adjacency_mat = function(simi_mat){
   
 }
 
-
 make_adjacency_mat_targets = function(simi_mat, thresh){
   
   n_targets = nrow(simi_mat)
@@ -1064,7 +1070,8 @@ make_adjacency_mat_targets = function(simi_mat, thresh){
     inds = which(simi_mat[i,]>thresh & simi_mat[i,]<1)
     #inds = order(simi_mat[i,], decreasing = T)[2:5]
     #if (length(inds)<4){
-    #  inds = order(simi_mat[i,], decreasing = T)[2:5]
+    #  inds = order(simi_mat[i,], decreasing = T)[1:5]
+    #  inds = setdiff(inds, i)
     #}
     adj_mat[i, inds] = 1
     adj_mat[inds,i ] = 1
@@ -1106,10 +1113,13 @@ make_training_adj_mat_for_column = function(dt_mat, simi_mat, col){
   for (k in temp){
     #cat('got observation for drug ',k,'\n')
     neighbors = which(simi_mat[k,]>0.9 & simi_mat[k,]<1)
-    #neighbors = order(simi_mat[k,], decreasing = T)[2:5]
-    if (length(neighbors)<4){
-      neighbors = order(simi_mat[k,], decreasing = T)[2:5]
-    }
+    neighbors = order(simi_mat[k,], decreasing = T)[2:5]
+    #if (length(neighbors)<4){
+    #  inds = order(sim_mat[i,], decreasing = T)[1:5]
+    #  inds = setdiff(inds, i)
+      #neighbors = order(simi_mat[k,], decreasing = T)[2:5]
+    #  neighbors = inds
+    #}
     #cat('which is adj to ',neighbors,'\n')
     #noise = sample(temp, 5)
     #for (n in noise){
@@ -1134,7 +1144,7 @@ make_training_adj_mat_for_column = function(dt_mat, simi_mat, col){
 
 get_metrics = function(preds, labels, cutoff){
   rmse = sqrt(mean((preds - labels)^2))
-  
+  aupr.val = NA
   if (length(which(labels>=cutoff))>0 && length(preds)>1 && length(which(labels<cutoff))>0){
     
     pred.obj = ROCR::prediction(preds, as.numeric(labels>=cutoff))
@@ -1149,13 +1159,18 @@ get_metrics = function(preds, labels, cutoff){
       prec.val[1] = 1
     }
     
+    ## comment this out if aupr computation crashes
     func = approxfun(cbind(rec.val,prec.val), yleft = 1)
-    aupr.val = integrate(func, 0, 0.99999, subdivisions = 1000L)$value
+    #aupr.val = integrate(func, 0, 1, subdivisions = 1000L)$value
+    #tryCatch(integrate(func, 0, 1, subdivisions = 1000L)$value, finally = (aupr.val = NA))
+    try((aupr.val = integrate(func, 0, 1, subdivisions = 1000L)$value), silent = TRUE)
+    ##
   } else {
     auc.val=NA
     aupr.val=NA
   }
   
+  #return(list(rmse,auc.val,NA))
   return(list(rmse,auc.val,aupr.val))
   
 }
