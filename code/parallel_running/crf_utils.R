@@ -408,20 +408,29 @@ get_libmf_prediction = function(train, iter){
 ## training_mat contains NA for missing values
 make_training_adj_mat = function(train_mat, drug_adj_mat, target_adj_mat, drug_set, target_set){
   
-  temp_adj_mat_drugs = matrix(0, nrow = nrow(train_mat)*ncol(train_mat), ncol = nrow(train_mat)*ncol(train_mat))
-  temp_adj_mat_targets = matrix(0, nrow = nrow(train_mat)*ncol(train_mat), ncol = nrow(train_mat)*ncol(train_mat))
+  if(is.vector(train_mat)){
+    n_row = length(train_mat)
+    n_col = 1
+  } else {
+    n_row = nrow(train_mat)
+    n_col = ncol(train_mat)
+  }
+  
+  temp_adj_mat_drugs = matrix(0, nrow = n_row*n_col, ncol = n_row*n_col)
+  temp_adj_mat_targets = matrix(0, nrow = n_row*n_col, ncol = n_row*n_col)
+  
   
   ##integrate the target similarities
-  for (i in 1:nrow(train_mat)){
-    from = (i-1)*ncol(train_mat)+1
-    to = i*ncol(train_mat)
+  for (i in 1:n_row){
+    from = (i-1)*n_col+1
+    to = i*n_col
     temp_adj_mat_targets[from:to,from:to] = target_adj_mat[target_set, target_set]
   }
   ## integrate the drug similarities
-  for (i in 1:ncol(train_mat)){
+  for (i in 1:n_col){
     from = i
-    to = (nrow(train_mat)-1)*ncol(train_mat)+i
-    temp = seq(from = from, to = to, by = ncol(train_mat))
+    to = (n_row-1)*n_col+i
+    temp = seq(from = from, to = to, by = n_col)
     temp_adj_mat_drugs[temp,temp] = drug_adj_mat[drug_set, drug_set]
   }
   
@@ -511,20 +520,28 @@ make_training_adj_mat__ = function(train_mat, drug_adj_mat, target_adj_mat, drug
 
 make_prediction_adj_mat = function(train_mat, drug_adj_mat, target_adj_mat, drug_set, target_set){
   
-  temp_adj_mat_drugs = matrix(0, nrow = nrow(train_mat)*ncol(train_mat), ncol = nrow(train_mat)*ncol(train_mat))
-  temp_adj_mat_targets = matrix(0, nrow = nrow(train_mat)*ncol(train_mat), ncol = nrow(train_mat)*ncol(train_mat))
+  if(is.vector(train_mat)){
+    n_row = length(train_mat)
+    n_col = 1
+  } else {
+    n_row = nrow(train_mat)
+    n_col = ncol(train_mat)
+  }
+  
+  temp_adj_mat_drugs = matrix(0, nrow = n_row*n_col, ncol = n_row*n_col)
+  temp_adj_mat_targets = matrix(0, nrow = n_row*n_col, ncol = n_row*n_col)
   
   ##integrate the target similarities
-  for (i in 1:nrow(train_mat)){
-    from = (i-1)*ncol(train_mat)+1
-    to = i*ncol(train_mat)
+  for (i in 1:n_row){
+    from = (i-1)*n_col+1
+    to = i*n_col
     temp_adj_mat_targets[from:to,from:to] = target_adj_mat[target_set, target_set]
   }
   ## integrate the drug similarities
-  for (i in 1:ncol(train_mat)){
+  for (i in 1:n_col){
     from = i
-    to = (nrow(train_mat)-1)*ncol(train_mat)+i
-    temp = seq(from = from, to = to, by = ncol(train_mat))
+    to = (n_row-1)*n_col+i
+    temp = seq(from = from, to = to, by = n_col)
     temp_adj_mat_drugs[temp,temp] = drug_adj_mat[drug_set, drug_set]
   }
   
