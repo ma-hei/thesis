@@ -150,7 +150,168 @@ Here, the term $\alpha\sum\limits_{i}f(y_i,X_i)$ penalizes the difference of the
 \subsubsection{Inference}
 
 \subsection{Experimental Settings}
-The performance of the model was evaluated by 5 fold Cross Validation on the drug-target pairs. Therefore the drug-target matrix was randomly partitioned into 5 parts, of which each was removed in turn from the training set and used as test data. The approach corresponds to the use case where it is the aim to predict the interaction affinities for the missing drug-target pairs where both, the drug and the target, have been encountered in the training set.
+The performance of the model was evaluated by 5 fold Cross Validation on the drug-target pairs. Therefore the drug-target matrix was randomly partitioned into 5 parts, of which each was removed in turn from the training set and used as test data. The approach corresponds to the use case where it is the aim to predict the interaction affinities for the missing drug-target pairs where both, the drug and the target, have been encountered in the training set. 
+
+The similarity matrices of the drugs and targets can either be integrated individually or simultaneously, which leads to three separate experimental settings. To integrate only the drug similarity matrix, a graphical model was constructed for each target separately (in the following refered to as target-CRFs). To integrate only the target similarity, a graphical model was constructed for each separate drug (in the following refered to as the drug-CRFs). In order to integrate both matrices simultaneously, the drugs and targets were first clustered into smaller submatrices and CRFs were constructed for the smaller sub-matrices (in the following refered to as the cluster-CRFs). In all cases, the parameters were learned separately for the individual drug-CRFs, target-CRFs and cluster-CRF and the missing binding affinities were predicted separately. 
+Additionally, the performance of the matrix factorization prediction alone was noted to see the improvement of integrating one or both of the similarity matrices through the CRF. 
+
+\begin{figure}
+\begin{tikzpicture}[scale=0.62]
+\tikzstyle{every node} = [draw, shape=circle]
+\node[draw=none] (a) at (-1, 3.5) {a)};
+\node (a) at (0, 0) {\tiny $Y_{i, 1}$};
+\node (b) at (1.5, 0) {\tiny $Y_{i, 2}$};
+\node (c) at (3, 0) {\tiny $Y_{i, 3}$};
+\node (d) at (4.5, 0) {\tiny $Y_{i, 4}$};
+\node (e) at (6, 0) {\tiny $Y_{i, 5}$};
+\node (f) at (7.5, 0) {\tiny $Y_{i, 6}$};
+\draw [-, draw=blue] (a) to  [out=280,in=260] (c);
+\draw [-, draw=blue] (b) to  [out=280,in=260] (c);
+\draw [-, draw=blue] (e) to  [out=280,in=260] (f);
+\draw [-, draw=blue] (c) to  [out=280,in=260] (d);
+\draw [-, draw=blue] (d) to  [out=280,in=260] (e);
+\draw [-, draw=blue] (d) to  [out=280,in=260] (f);
+
+\node [fill=gray!30](ax) at (0, 2) {\tiny $X_{i, 1}$};
+\node [fill=gray!30](bx) at (1.5, 2) {\tiny $X_{i, 2}$};
+\node [fill=gray!30](cx) at (3, 2) {\tiny $X_{i, 3}$};
+\node [fill=gray!30](dx) at (4.5, 2) {\tiny $X_{i, 4}$};
+\node [fill=gray!30](ex) at (6, 2) {\tiny $X_{i, 5}$};
+\node [fill=gray!30](fx) at (7.5, 2) {\tiny $X_{i, 6}$};
+
+\draw [-] (a) to  [out=90,in=270] (ax);
+\draw [-] (b) to  [out=90,in=270] (bx);
+\draw [-] (c) to  [out=90,in=270] (cx);
+\draw [-] (d) to  [out=90,in=270] (dx);
+\draw [-] (e) to  [out=90,in=270] (ex);
+\draw [-] (f) to  [out=90,in=270] (fx);
+
+\node[draw=none] (a) at (9, 5.2) {b)};
+\node (a) at (10, 4) {\tiny $Y_{i, 1}$};
+\node (b) at (10, 2.5) {\tiny $Y_{i, 2}$};
+\node (c) at (10, 1) {\tiny $Y_{i, 3}$};
+\node (d) at (10, -0.5) {\tiny $Y_{i, 4}$};
+\node (e) at (10, -2) {\tiny $Y_{i, 5}$};
+\node (f) at (10, -3.5) {\tiny $Y_{i, 6}$};
+
+\node [fill=gray!30](ax) at (12, 4) {\tiny $X_{i, 1}$};
+\node [fill=gray!30](bx) at (12, 2.5) {\tiny $X_{i, 2}$};
+\node [fill=gray!30](cx) at (12, 1) {\tiny $X_{i, 3}$};
+\node [fill=gray!30](dx) at (12, -0.5) {\tiny $X_{i, 4}$};
+\node [fill=gray!30](ex) at (12, -2) {\tiny $X_{i, 5}$};
+\node [fill=gray!30](fx) at (12, -3.5) {\tiny $X_{i, 6}$};
+
+\draw [-] (a) to  [out=0,in=180] (ax);
+\draw [-] (b) to  [out=0,in=180] (bx);
+\draw [-] (c) to  [out=0,in=180] (cx);
+\draw [-] (d) to  [out=0,in=180] (dx);
+\draw [-] (e) to  [out=0,in=180] (ex);
+\draw [-] (f) to  [out=0,in=180] (fx);
+
+\draw [-, draw=red] (a) to  [out=190,in=170] (c);
+\draw [-, draw=red] (c) to  [out=190,in=170] (d);
+\draw [-, draw=red] (d) to  [out=190,in=170] (f);
+\draw [-, draw=red] (b) to  [out=190,in=170] (c);
+\draw [-, draw=red] (c) to  [out=190,in=170] (e);
+
+\node[draw=none] (a) at (13.5, 5.2) {c)};
+\node (a) at (14.5, 4) {\tiny $Y_{i, 1}$};
+\node (b) at (14.5, 2.5) {\tiny $Y_{i, 2}$};
+\node (c) at (14.5, 1) {\tiny $Y_{i, 3}$};
+\node (d) at (14.5, -0.5) {\tiny $Y_{i, 4}$};
+\node (e) at (14.5, -2) {\tiny $Y_{i, 5}$};
+\node (f) at (14.5, -3.5) {\tiny $Y_{i, 6}$};
+
+\node [fill=gray!30](ax) at (16.2, 4) {\tiny $X_{i, 1}$};
+\node [fill=gray!30](bx) at (16.2, 2.5) {\tiny $X_{i, 2}$};
+\node [fill=gray!30](cx) at (16.2, 1) {\tiny $X_{i, 3}$};
+\node [fill=gray!30](dx) at (16.2, -0.5) {\tiny $X_{i, 4}$};
+\node [fill=gray!30](ex) at (16.2, -2) {\tiny $X_{i, 5}$};
+\node [fill=gray!30](fx) at (16.2, -3.5) {\tiny $X_{i, 6}$};
+
+
+\draw [-] (a) to  [out=0,in=180] (ax);
+\draw [-] (b) to  [out=0,in=180] (bx);
+\draw [-] (c) to  [out=0,in=180] (cx);
+\draw [-] (d) to  [out=0,in=180] (dx);
+\draw [-] (e) to  [out=0,in=180] (ex);
+\draw [-] (f) to  [out=0,in=180] (fx);
+
+\node (a_) at (18.5, 4) {\tiny $Y_{i, 1}$};
+\node (b_) at (18.5, 2.5) {\tiny $Y_{i, 2}$};
+\node (c_) at (18.5, 1) {\tiny $Y_{i, 3}$};
+\node (d_) at (18.5, -0.5) {\tiny $Y_{i, 4}$};
+\node (e_) at (18.5, -2) {\tiny $Y_{i, 5}$};
+\node (f_) at (18.5, -3.5) {\tiny $Y_{i, 6}$};
+
+\node[fill=gray!30] (ax_) at (20.2, 4) {\tiny $X_{i, 1}$};
+\node[fill=gray!30] (bx_) at (20.2, 2.5) {\tiny $X_{i, 2}$};
+\node[fill=gray!30] (cx_) at (20.2, 1) {\tiny $X_{i, 3}$};
+\node[fill=gray!30] (dx_) at (20.2, -0.5) {\tiny $X_{i, 4}$};
+\node[fill=gray!30] (ex_) at (20.2, -2) {\tiny $X_{i, 5}$};
+\node[fill=gray!30] (fx_) at (20.2, -3.5) {\tiny $X_{i, 6}$};
+
+\draw [-] (a_) to  [out=0,in=180] (ax_);
+\draw [-] (b_) to  [out=0,in=180] (bx_);
+\draw [-] (c_) to  [out=0,in=180] (cx_);
+\draw [-] (d_) to  [out=0,in=180] (dx_);
+\draw [-] (e_) to  [out=0,in=180] (ex_);
+\draw [-] (f_) to  [out=0,in=180] (fx_);
+
+\node (a__) at (22.5, 4) {\tiny $Y_{i, 1}$};
+\node (b__) at (22.5, 2.5) {\tiny $Y_{i, 2}$};
+\node (c__) at (22.5, 1) {\tiny $Y_{i, 3}$};
+\node (d__) at (22.5, -0.5) {\tiny $Y_{i, 4}$};
+\node (e__) at (22.5, -2) {\tiny $Y_{i, 5}$};
+\node (f__) at (22.5, -3.5) {\tiny $Y_{i, 6}$};
+
+\node[fill=gray!30] (ax__) at (24.2, 4) {\tiny $X_{i, 1}$};
+\node[fill=gray!30] (bx__) at (24.2, 2.5) {\tiny $X_{i, 2}$};
+\node[fill=gray!30] (cx__) at (24.2, 1) {\tiny $X_{i, 3}$};
+\node[fill=gray!30] (dx__) at (24.2, -0.5) {\tiny $X_{i, 4}$};
+\node[fill=gray!30] (ex__) at (24.2, -2) {\tiny $X_{i, 5}$};
+\node[fill=gray!30] (fx__) at (24.2, -3.5) {\tiny $X_{i, 6}$};
+
+\draw [-] (a__) to  [out=0,in=180] (ax__);
+\draw [-] (b__) to  [out=0,in=180] (bx__);
+\draw [-] (c__) to  [out=0,in=180] (cx__);
+\draw [-] (d__) to  [out=0,in=180] (dx__);
+\draw [-] (e__) to  [out=0,in=180] (ex__);
+\draw [-] (f__) to  [out=0,in=180] (fx__);
+
+\draw [-, draw=blue] (a) to  [out=70,in=110] (a_);
+\draw [-, draw=blue] (a_) to  [out=70,in=110] (a__);
+\draw [-, draw=blue] (b) to  [out=70,in=110] (b_);
+\draw [-, draw=blue] (b_) to  [out=70,in=110] (b__);
+\draw [-, draw=blue] (c) to  [out=70,in=110] (c_);
+\draw [-, draw=blue] (c_) to  [out=70,in=110] (c__);
+\draw [-, draw=blue] (d) to  [out=70,in=110] (d_);
+\draw [-, draw=blue] (d_) to  [out=70,in=110] (d__);
+\draw [-, draw=blue] (e) to  [out=70,in=110] (e_);
+\draw [-, draw=blue] (e_) to  [out=70,in=110] (e__);
+\draw [-, draw=blue] (f) to  [out=70,in=110] (f_);
+\draw [-, draw=blue] (f_) to  [out=70,in=110] (f__);
+
+
+\draw [-, draw=red] (a) to  [out=210,in=150] (b);
+\draw [-, draw=red] (b) to  [out=210,in=150] (c);
+\draw [-, draw=red] (b) to  [out=210,in=150] (d);
+\draw [-, draw=red] (d) to  [out=210,in=150] (e);
+\draw [-, draw=red] (e) to  [out=210,in=150] (f);
+
+\draw [-, draw=red] (a_) to  [out=210,in=150] (b_);
+\draw [-, draw=red] (b_) to  [out=210,in=150] (c_);
+\draw [-, draw=red] (b_) to  [out=210,in=150] (d_);
+\draw [-, draw=red] (d_) to  [out=210,in=150] (e_);
+\draw [-, draw=red] (e_) to  [out=210,in=150] (f_);
+
+\draw [-, draw=red] (a__) to  [out=210,in=150] (b__);
+\draw [-, draw=red] (b__) to  [out=210,in=150] (c__);
+\draw [-, draw=red] (b__) to  [out=210,in=150] (d__);
+\draw [-, draw=red] (d__) to  [out=210,in=150] (e__);
+\draw [-, draw=red] (e__) to  [out=210,in=150] (f__);
+\end{tikzpicture}
+\end{figure}
 
 
 
