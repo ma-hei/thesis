@@ -1,0 +1,130 @@
+\documentclass{sfuthesis}
+
+\title{fill in title}
+\thesistype{Master}
+\author{Marten Heidemeyer}
+\previousdegrees{%
+	B.Sc., Universität zu Lübeck, 2013}
+\degree{Master of Science}
+\discipline{Computing Science}
+\department{Department of Computing Science}
+\faculty{}
+\copyrightyear{2016}
+\semester{Fall 2016}
+\date{1 September 2015}
+
+\keywords{}
+
+\committee{%
+	\chair{}{}
+	\member{}{Senior Supervisor\\Professor}
+	\member{}{Supervisor\\Associate Professor}
+	\member{}{Supervisor\\Adjunct Professor}
+	\member{}{Internal Examiner\\Assistant Professor\\School of Engineering Science}
+	\member{}{External Examiner\\Professor\\Department of Quantum Fields\\Mars University}
+}
+
+%   PACKAGES AND CUSTOMIZATIONS  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%   Add any packages or custom commands you need for your thesis here.
+%   You don't need to call the following packages, which are already called in
+%   the sfuthesis class file:
+%
+%   - appendix
+%   - etoolbox
+%   - fontenc
+%   - geometry
+%   - lmodern
+%   - nowidow
+%   - setspace
+%   - tocloft
+%
+%   If you call one of the above packages (or one of their dependencies) with
+%   options, you may get a "Option clash" LaTeX error. If you get this error,
+%   you can fix it by removing your copy of \usepackage and passing the options
+%   you need by adding
+%
+%       \PassOptionsToPackage{<options>}{<package>}
+%
+%   before \documentclass{sfuthesis}.
+%
+
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[pdfborder={0 0 0}]{hyperref}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{tikz}
+\usepackage{mathrsfs}
+
+
+
+
+
+
+%   FRONTMATTER  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%   Title page, committee page, copyright declaration, abstract,
+%   dedication, acknowledgements, table of contents, etc.
+%
+
+\begin{document}
+
+\frontmatter
+\maketitle{}
+%\makecommittee{}
+
+\begin{abstract}
+	
+\end{abstract}
+
+
+\begin{dedication} % optional
+\end{dedication}
+
+
+\begin{acknowledgements} % optional
+\end{acknowledgements}
+
+\addtoToC{Table of Contents}\tableofcontents\clearpage
+\addtoToC{List of Tables}\listoftables\clearpage
+\addtoToC{List of Figures}\listoffigures
+
+
+
+
+
+%   MAIN MATTER  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%   Start writing your thesis --- or start \include ing chapters --- here.
+%
+
+\mainmatter%
+
+
+\input{Introduction.tex}
+\input{Method.tex}
+
+
+
+
+%   BACK MATTER  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%   References and appendices. Appendices come after the bibliography and
+%   should be in the order that they are referred to in the text.
+%
+%   If you include figures, etc. in an appendix, be sure to use
+%
+%       \caption[]{...}
+%
+%   to make sure they are not listed in the List of Figures.
+%
+
+\backmatter%
+	\addtoToC{Bibliography}
+	\bibliographystyle{plain}
+	\bibliography{references}
+
+\begin{appendices} % optional
+	\chapter{Code}
+\end{appendices}
+\end{document}

@@ -1,0 +1,14 @@
+
+\chapter{Introduction}
+
+\section{A Statement of the Problem}
+
+Knowledge about the interaction strength between chemical structures and proteins is an important topic in drug development.
+The goal in drug development is to find a chemical structure that binds to a diseases target protein without causing harmful side effects by binding to proteins other than the diseases target.
+The safest and most accurate method to gain knowledge about the interaction strength of drug candidates and target proteins is through wetlab experiments. On the other hand, wetlab experiments are costly in terms of time and money, as there are thousands of potential drug candidates. The failure of a new ligand in toxicity tests is higher than $90\%$ which is the most significant reason for the high cost of the drug development process. In drug development, drug repositioning is a technique in which known drugs and drug candidates are used to treat new diseases. Existing drugs may bind to the target protein of a disease other than the disease that the drug was originally developed for. Using an existing drug as a basis for the development of a new drug is far more likely to succeed, because the existing drug has already passed toxicity tests and its safety is known. Numerous openly accessible databases exist, listing the interaction of known compounds, which can be either already approved drugs or experimental drug candidates, against known target proteins (ChEMBL \cite{gaulton2012chembl}, DrugBank \cite{wishart2008drugbank}, KEGG\cite{kanehisa2011kegg}, SuperTarget \cite{gunther2008supertarget}, BindingDB \cite{liu2007bindingdb}). 
+
+\section{Review of Literature}
+
+Machine Learning and Data Mining techniques for drug development is a hot topic. In most existing methods the problem is formulated as a binary classification problem, where the drug-target pairs are treated as instances and the chemical structures of drugs and the amino acid subsequences of the targets can be used as features, describing the instances. The goal in the binary formulation is to classify a given drug-target pair into binding and non binding.
+
+Two existing methods for drug target interaction prediction that are not based on machine learning techniques are docking simulation and ligand-based approaches. In docking simulation the interaction strength of ligands and proteins is estimated based on the structure of the target protein. This process is extremely time-consuming and the structural information of a protein is not always available \cite{liu2016neighborhood}. In ligand based approaches, the interaction strength of a candidate ligand to a target protein is obtained by comparing the candiate ligand to ligands for which the interaction strength to the target is known. This approach is not applicable, when information of candidate-similar ligands is not available for the target protein.
