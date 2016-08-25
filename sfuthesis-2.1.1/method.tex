@@ -79,7 +79,7 @@ The term $\int_{-\infty}^{\infty} exp(\Psi) dy$ is a normalization term which ma
 $f_k(y_i,X) = -(y_i - X_{i,k})^2$\\
 $g_k(y_i,y_j,X) = -\frac{1}{2}S_{i,j}^k(y_i - y_j)^2$
 \end{center}
-Intuitively, the weights $\alpha_k$ on the feature functions $f_k$ represent the reliability of observation $X_{i,k}$ in regard to the true label $y_i$. Here, the observations $X_{i,k}$ can for example represent the predictions of $K_1$ regressors. In the CCRF that is used for the experiments in this thesis $K_1$ is always $K_1=1$ and $X_{i,1}$ represents the initial prediction coming from the Matrix Factorization part of the model.  Edge features $g_k$ represent the dependency between labels $y_i$ and $y_j$ with similarity $S_{i,j}^k, k \in 1,\dots, K_2$. With given drug-drug similarity matrix $S_D$ and target-target similarity matrix $S_T$, $S_{i,j}^1$ and $S_{i,j}^2$ can for example be defined as:
+Intuitively, the weights $\alpha_k$ on the feature functions $f_k$ represent the reliability of observation $X_{i,k}$ in regard to the true label $y_i$. Here, the observations $X_{i,k}$ can for example represent the initial predictions of $K_1$ regressors. In the CCRF that is used for the experiments in this thesis $K_1$ is always $K_1=1$ and $X_{i,1}$ represents the initial prediction coming from the Matrix Factorization part of the model.  Edge features $g_k$ represent the dependency between labels $y_i$ and $y_j$ with similarity $S_{i,j}^k, k \in 1,\dots, K_2$. With given drug-drug similarity matrix $S_D$ and target-target similarity matrix $S_T$, $S_{i,j}^1$ and $S_{i,j}^2$ can for example be defined as:
 \begin{equation}
 \label{simi_1}
 S_{i,j}^1 =
@@ -260,4 +260,19 @@ A dataset of dimension $m \times n$ ($m$ drugs and $n$ targets) that has underly
 
 For the numerical experiments a dataset of $n=40$ rows and $m=40$ columns was generated. As described above for the dataset generation, a first dataset $X$ was generated which has only underlying latent factors. Next the CCRF parameters were chosen arbitrarily as $\alpha=1$ and $\beta=2$. The graphical structure of the CCRF was chosen as illustrated in Figure \ref{fig:numStructure}. Next, the corresponding multivariate Gaussian was obtained, by first calculating the covariance matrix $\Sigma$ and mean vector $\mu$ as described in section \ref{sec:CCRF}. A sample from this distribution was taken as the simulated dataset. Next, 150 training values were sampled from the complete dataset. 
 
+\section{Comparison Model: KronRLS}
+$KronRLS$ is a model for continuous drug target interaction prediction that was presented in \cite{pahikkala2014toward}. The model that is developed in this thesis will later be compared to the performance of $KronRLS$. $KronRLS$ is a kernel methods which formulates the problem as follows:
+for a set $D$ of drugs and a set $T$ of targets, we have a set $X = x_1,\dots,x_m$ of drug-target pairs ($X$ is a subset of $D\times T$) with an associated vector $y = y_1,\dots,y_m$ of continuous binding affinities as training data. To find a prediction function $f(x)$ for all possible drug target pairs $x \in D\times T$, we learn $f$ from the training data by minimizing the objective:
+\begin{center}
+$J(f) = \sum\limits_{i=1}^{m}(y_i-f(x_i))^2 + \lambda ||f||_k^2$
+\end{center}
+In the objective function, $||f||_k^2$ is the norm of $f$, which is associated to a kernel function $k$ (which is described below), and $\lambda>0$ is a user defined regularization parameter. A minimizer of the above objective can be expressed as \begin{center}
+$f(x)=\sum\limits_{i=1}^
+{m} a_i k(x,x_i)$
+\end{center}
+The kernel function $k$ is a symmetric similarity measure between each of the $m$ drug-target pairs, which can be represented by a $m \times m$ matrix $K$. When we have two individual similarity matrices $K_d$ and $K_t$ for the drugs and targets respectively, a similarity matrix for each drug-target pair can be computed as \mbox{$K_d \otimes K_t$}, where $\otimes$ stands for the Kronecker product. Now we first assume that the training set $X$ contains every possible pair of drugs and targets (which is not the case in the real application of the method). With this assumption, we can compute $K$ as \mbox{$K = K_d \otimes K_t$} and we can learn the parameters $a_i$ which define the minimizer $f$ by solving the system of linear equations:
+\begin{center}
+$(K+\lambda I)a = y$
+\end{center}where $I$ is the $D\times T$ identity matrix.
+For the real world scenario, where only a subset of $D\times T$ is given as training data, the vector $y$ has missing values in the above formulation. To find the parameters $a$,  \cite{pahikkala2014toward} suggests to formulate the problem as above and use approaches such as conjugate gradient, combined with Kronecker algebraic optimization to solve the system of linear equations.
 

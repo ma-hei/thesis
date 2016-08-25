@@ -1,0 +1,15 @@
+\chapter{Experiments}
+
+\input{Datasets.tex}
+
+\section{Experimental Settings}
+
+\subsection{Integrating the similarity matrices}
+For the MF+CCRF method that is developed in this thesis it is possible to integrate:
+\begin{itemize}
+\item none of the similarity matrices
+\item only the drug drug similarity matrix
+\item only the target target similarity matrix
+\item both similarity matrices
+\end{itemize}
+Here, using no similarity metric means to use just the MF prediction. When only the drug-drug similarity metric is used, we build graphical models for each column (target) of the matrix. Thus a separate set of parameters is learned and independent predictions are made for each target. Similarly, if only the target-target similarity metric is used, a separate graphical model is build for each row (drug) of the matrix and separate paratemers are learned/independant predictions made for each drug. When both similarity matrices are used each cell of the matrix becomes a node of the CCRF and by default we would learn only one set of parameters for this CCRF. The datasets that were used for the experiments in this thesis are too large to create a single graphical model for all drugs and targets because in the inference step it is necessary to compute the inverse of a matrix of size $|D||T| \times |D||T|$. In order to integrate both similarity matrices for the CCRF the drug-target matrix was therefore clustered into smaller submatrices of feasible size. 
