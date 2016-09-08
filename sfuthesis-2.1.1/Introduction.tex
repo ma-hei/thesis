@@ -7,8 +7,77 @@ Knowledge about the interaction strength between chemical structures and protein
 The goal in drug development is to find a chemical structure that binds to a diseases target protein without causing harmful side effects by binding to proteins other than the diseases target.
 The safest and most accurate method to gain knowledge about the interaction strength of drug candidates and target proteins is through wetlab experiments. On the other hand, wetlab experiments are costly in terms of time and money, as there are thousands of potential drug candidates. The failure of a new ligand in toxicity tests is higher than $90\%$ which is the most significant reason for the high cost of the drug development process. In drug development, drug repositioning is a technique in which known drugs and drug candidates are used to treat new diseases. Existing drugs may bind to the target protein of a disease other than the disease that the drug was originally developed for. Using an existing drug as a basis for the development of a new drug is far more likely to succeed, because the existing drug has already passed toxicity tests and its safety is known. Numerous openly accessible databases exist, listing the interaction of known compounds, which can be either already approved drugs or experimental drug candidates, against known target proteins (ChEMBL \cite{gaulton2012chembl}, DrugBank \cite{wishart2008drugbank}, KEGG\cite{kanehisa2011kegg}, SuperTarget \cite{gunther2008supertarget}, BindingDB \cite{liu2007bindingdb}). The high cost of in vitro methods for the testing of drug-target binding behaviour and the availability of experimental results in public databases give strong incentives to develop in silico methods for the prediction of new drug target interactions.
 
+
+
 \section{Review of Literature}
 
-Machine Learning and Data Mining techniques for drug development is a hot topic. In most existing methods the problem is formulated as a binary classification problem, where the drug-target pairs are treated as instances and the chemical structures of drugs and the amino acid subsequences of the targets can be used as features, describing the instances. The goal in the binary formulation is to classify a given drug-target pair into binding and non binding.
+Machine Learning and Data Mining techniques for drug development is a hot topic. In most existing methods the problem is formulated as a binary classification problem, where the drug-target pairs are treated as instances and the chemical structures of drugs and the amino acid subsequences of the targets can are used as features, describing the instances. The goal in the binary formulation is to classify a given drug-target pair into binding and non binding. This approach stands in contrast with the developed method in this thesis, which predicts continuous drug target binding affinities. The related methods which classify drug target pairs will still be introduced here because the majority of existing work formulates the problem as such. The only existing method $KronRLS$ which predicts continuous binding affinities is introduced in the Methods section. The following sections describe the state of the art methods for drug target interaction prediction.
 
-Two existing methods for drug target interaction prediction that are not based on machine learning techniques are docking simulation and ligand-based approaches. In docking simulation the interaction strength of ligands and proteins is estimated based on the structure of the target protein. This process is extremely time-consuming and the structural information of a protein is not always available \cite{liu2016neighborhood}. In ligand based approaches, the interaction strength of a candidate ligand to a target protein is obtained by comparing the candiate ligand to ligands for which the interaction strength to the target is known. This approach is not applicable, when information of candidate-similar ligands is not available for the target protein.
+\subsection{Yamanishi, Yoshihiro, et al. "Prediction of drug-target interaction networks from the integration of chemical and genomic spaces." 2008}
+
+One of the first proposed models for the task \cite{yamanishi2008prediction}, is a supervised bipartite graph learning method. The motivation of the model is to reveal the correlations between drug similarity, target similarity and the drug target interaction network. The authors define the \textit{chemical space} for drugs, the \textit{genomic space} for targets and the \textit{pharmacological space} for drug-target pairs and propose a method to embed compounds and proteins from the \textit{chemical} and \textit{genomic} spaces respectively into the unified \textit{pharmacological space}. New drug-target interactions are then predicted by connecting drugs and targets which are closer than a threshold in the \textit{pharmacological} space. 
+
+In the authors model, the drug target interaction network is represented by a bipartite graph $G=(V_1+V_2, E)$ , where $V_1$ is a set of drugs, $V_2$ is a set of target proteins and $E$ is a set of interactions between the drugs and targets. A graph-based similarity matrix 
+$ K = \begin{pmatrix}
+
+K_{cc} & K_{cg} \\
+K_{cg}^T & K_{gg}
+\end{pmatrix}
+$
+is constructed, where the elements of $K_{cc}$, $K_{gg}$, $K_{cg}$ are computed by using Gaussian functions:
+$(K_{cc})_{ij}=exp(-d^2_{c_i,c_j}/h^2)$ for $i,j=1,\dots,n_c$, $(K_{gg})_{ij}=exp(-d^2_{g_ig_j}/h^2)$ for $i,j=1,\dots,n_g$ and $(K_{cg})_{ij} = exp(-d^2_{c_ig_j}/h^2)$ for $i=1,\dots,n_c, j=1,\dots,n_g$. Here $d$ stands for the shortest distance between two objects,  $n_c$ and $n_g$ stand for the number of known drugs and targets respectively and $h$ is a width parameter. 
+To compute the vectors that span the \textit{pharmacological} space, the eigenvalue decomposition of $K$ is computed as:
+
+$K=\Gamma \Lambda^{\frac{1}{2}} \Lambda^{\frac{1}{2}} \Gamma ^T = UU^T$ and all drugs and targets are represented by using the row vectors of the matrix $U=(u_{c_1},\dots,u_{c_{n_c}},u_{g_1},\dots,u_{g_{n_g}})^T$ .
+
+Now two models are learned to map new compounds and targets from the \textit{chemical} and \textit{genomic} space respectively into the \textit{pharmacological} space. A kernel regression model that learns the feature vectors of new compounds and targets is proposed for this task:
+\begin{center}
+$u=\sum\limits_{i=1}^{n}s(x,x_i)w_i+\epsilon$
+\end{center}
+
+for the mapping of the compounds, $s(x,x_i)$ represents the compound similarity and for the mapping of the targets $s(x,x_i)$ represents the target similarity. $\epsilon$ is a noise vector and $w_i$ is a weight vector that is learned by minimizing the loss function:
+\begin{center}
+$L=||UU^T - SWW^TS^T||^2_F$
+\end{center}
+where $S$ represents the respective similarity matrix, $W$ represents the matrix of weight vectors and $||.||_F$ represents the Frobenius norm.
+Two such models, meaning two sets of weight vectors are learned to map new compounds and new targets onto the \textit{pharmacological} space.
+Finally, based on the feature vectors $u$ in the \textit{pharmacological} space, feature-based similarity scores for three types of drug-target pairs are computed as the inner product as follows:
+\begin{itemize}
+\item $corr(c_{new}, g_j) = u_{cnew}u_{gj}$
+\item $corr(c_i, g_{new}) = u_{ci}u_{gnew}$
+\item $corr(c_{new},g_{new}) = u_{cnew}u_{gnew}$
+\end{itemize}
+High-scoring compound-protein pairs of any of the three above types are predicted to interact with each other.
+
+\subsection{van Laarhoven, Twan, Sander B. Nabuurs, and Elena Marchiori. "Gaussian interaction profile kernels for predicting drug-target interaction." 2011}
+
+The authors of this method first build an interaction profile for each drug and for each target. The interaction profile of each compound is a binary vector describing the presence or absence of interaction with every target in the network. The interaction profile for each target is defined analogously. The interaction profiles of the drugs and targets are used as feature vectors and a Gaussian kernel is constructed for the drugs and targets respectively. Let $y_{d_i}$ be the interaction profile of drug $d_i$, then the Gaussian kernel for the drugs is defined as
+\begin{center}
+$K_{GIP}(d_i,d_j) = exp(-\gamma_d || y_{di}-y_{dj} ||^2)$
+\end{center}
+and the Gaussian kernel for the targets can be defined analogously. Here, $GIP$ stands for Gaussian Interaction Profile and the parameter $\gamma_d$ controls the kernels bandwidth. The similarity information of the drugs and targets is integrated by defining two new kernels $K_{\text{chemical}}$ and $K_{\text{genomic}}$ for the drugs and targets respectively which are defined as:
+\begin{center}
+$S_{sym}=(S+S^T)/2$
+\end{center}
+where $S$ stands for the respective similarity matrix. Finally, a combined kernel of the two kernels above is defined as a weighted average:
+\begin{center}
+$K_d=\alpha_dK_{\text{chemical}}+(1-\alpha_d)K_{GIP}$\\
+$K_t =\alpha_tK_{\text{genomic}}+(1-\alpha_t)K_{GIP}$
+\end{center}
+The prediction of the Regularized Least Squares (RLS) classifier for a given kernel $K$ is defined as:
+\begin{center}
+$\hat{y} = K(K+\sigma I)^{-1}y$
+\end{center}
+With the matrix $Y\in n_d \times n_t$ being the binary matrix of training values of $n_d$ drugs and $n_t$ targets and the Kernels for the drugs and targets as defined above, the authors of the model propose two ways to predict the interaction of all drug-target pairs in the matrix. The first type of prediction $RLS-avg$ is defined as:
+\begin{center}
+$\hat{Y}=\frac{1}{2}(K_d(K_d+\sigma I)^{-1}Y)+\frac{1}{2}(K_t(K_t+\sigma I)^{-1}Y^T)^T$
+\end{center}
+For the second type of prediction, the authors propose to compute yet a fourth kernel, defined by the Kronecker product $K = K_d \otimes K_t$, which gives a similarity for all drug-target pairs. The model named \textit{RLS-Kron} predicts $\hat{Y}$ as:
+\begin{center}
+$vec(\hat{Y}^T) = K(K+\sigma I)^{-1}vec(Y^T)$
+\end{center}
+
+
+
+%Two existing methods for drug target interaction prediction that are not based on machine learning techniques are docking simulation and ligand-based approaches. In docking simulation the interaction strength of ligands and proteins is estimated based on the structure of the target protein. This process is extremely time-consuming and the structural information of a protein is not always available \cite{liu2016neighborhood}. In ligand based approaches, the interaction strength of a candidate ligand to a target protein is obtained by comparing the candiate ligand to ligands for which the interaction strength to the target is known. This approach is not applicable, when information of candidate-similar ligands is not available for the target protein. Both approches will not be examined further here. 
+

@@ -15,7 +15,7 @@ The combination of the two models (MF and CCRF) is described in section \ref{sec
 
 \subsection{Notation}
 \label{sec:Notation}
-Let $D$ and $T$ denote sets of drugs and targets respectively. Let $R \in \mathbb{R} ^{|D| \times |T|}$ denote a drug-target interaction matrix, where the rows represent the drugs in $D$ and the columns represent the targets in $T$. $R$ contains missing values for drug-target pairs for which the interaction strength is unknown and real values representing the interaction strength for drug-target pairs whose binding affinity was measured in wetlab experiments. The known values in $R$ serve as training data for the developed model. Furter, let $S_D \in \mathbb{R}^{|D| \times |D|}$ and $S_T \in \mathbb{R}^{|T| \times |T|}$ denote matrices containing similarity scores for the drugs $D$ and targets $T$ respectively. The interaction data and similarity scores can be of different kind as described in section [insert reference to data section].  In the \textit{drug target interaction prediction} task, the number of missing values in $R$ usually outweights the number of known interactions and $R$ is only sparsely populated (see data section).
+Let $D$ and $T$ denote sets of drugs and targets respectively. Let $R \in \mathbb{R} ^{|D| \times |T|}$ denote a drug-target interaction matrix, where the rows represent the drugs in $D$ and the columns represent the targets in $T$. $R$ contains missing values for drug-target pairs for which the interaction strength is unknown and real values representing the interaction strength for drug-target pairs whose binding affinity was measured in wetlab experiments. The known values in $R$ serve as training data for the developed model. Further, let $S_D \in \mathbb{R}^{|D| \times |D|}$ and $S_T \in \mathbb{R}^{|T| \times |T|}$ denote matrices containing similarity scores for the drugs $D$ and targets $T$ respectively. The interaction data and similarity scores can be of different kind as described in section \ref{sec:datasets}.  In the \textit{drug target interaction prediction} task, the number of missing values in $R$ usually outweights the number of known interactions and $R$ is only sparsely populated.
 
 \subsection{Matrix Factorization}
 \label{sec:MF}
@@ -27,7 +27,7 @@ The factor matrices $P$ and $Q$ are learned by minimizing the regularized square
 \begin{equation}
 \min\limits_{Q,P}{\sum\limits_{(d_i,t_j)\in \kappa} (a_{i,j}-q_i^Tp_j)^2} + \lambda (||p||^2 + ||q||^2)
 \end{equation}
-The term $(a_{i,j}-q_i^Tp_j)^2$ represents the fitting of the learned parameters to the previously observed binding affinites. The term $\lambda (||p||^2 + ||q||^2)$ penalizes the magnitudes of the learned parameters to prevent overfitting and the constant $\lambda$ controls the extend of overfitting.
+The term $(a_{i,j}-q_i^Tp_j)^2$ represents the fit of the learned parameters to the previously observed binding affinites. The term $\lambda (||p||^2 + ||q||^2)$ penalizes the magnitudes of the learned parameters to prevent overfitting and the constant $\lambda$ controls the extend of overfitting.
 The above optimization problem can be solved by stochastic gradient descent as described in \cite{Koren:2009:MFT:1608565.1608614}:
 The algorithm loops through all pairs $(d_i, t_j)$ in $R$ for which the binding affinity is known, computes the current prediction for $(d_i, t_j)$ and computes the associated prediction error as:
 \begin{equation}
@@ -79,7 +79,7 @@ The term $\int_{-\infty}^{\infty} exp(\Psi) dy$ is a normalization term which ma
 $f_k(y_i,X) = -(y_i - X_{i,k})^2$\\
 $g_k(y_i,y_j,X) = -\frac{1}{2}S_{i,j}^k(y_i - y_j)^2$
 \end{center}
-Intuitively, the weights $\alpha_k$ on the feature functions $f_k$ represent the reliability of observation $X_{i,k}$ in regard to the true label $y_i$. Here, the observations $X_{i,k}$ can for example represent the initial predictions of $K_1$ regressors. In the CCRF that is used for the experiments in this thesis $K_1$ is always $K_1=1$ and $X_{i,1}$ represents the initial prediction coming from the Matrix Factorization part of the model.  Edge features $g_k$ represent the dependency between labels $y_i$ and $y_j$ with similarity $S_{i,j}^k, k \in 1,\dots, K_2$. With given drug-drug similarity matrix $S_D$ and target-target similarity matrix $S_T$, $S_{i,j}^1$ and $S_{i,j}^2$ can for example be defined as:
+Intuitively, the weights $\alpha_k$ on the feature functions $f_k$ represent the reliability of observation $X_{i,k}$ in regard to the true label $y_i$. Here, the observations $X_{i,k}$ can for example represent the initial predictions of a set of $K_1$ regressors. In the CCRF that is used for the experiments in this thesis theres always only one regressor (and thus $K_1=1$) which is the Matrix Factorization part of the model and $X_{i,1}$ represents the initial prediction coming from Matrix Factorization.  Edge features $g_k$ represent the dependency between labels $y_i$ and $y_j$ with similarity $S_{i,j}^k, k \in 1,\dots, K_2$. With given drug-drug similarity matrix $S_D$ and target-target similarity matrix $S_T$, $S_{i,j}^1$ and $S_{i,j}^2$ can for example be defined as:
 \begin{equation}
 \label{simi_1}
 S_{i,j}^1 =
@@ -101,7 +101,7 @@ where $thresh_d$ and $thresh_t$ are user defined thresholds. Intuitively, the pa
 As explained in the following sections, the conditional probability distribution that is defined through the CCRF can be transfomerd into a multivariate Gaussian distribution in closed form, which is a useful property for both learning the weights on the feature functions as well as making predictions for missing values.
 \subsubsection{Parameter Learning}
 
-This section describes the parameter learning procedure of the CCRF for quadratic vertex and edge functions as described above. Assume we are given training values $Y=\{y_1,\dots,y_n\}$. Additionally, for each $y_i$ we have given the prediction $X_{i,k}$ that regressor $k$ would have predicted. As explained above, for the model in this thesis we have $K_1=1$ and thus we have only one prediction $X_{i,1}$ for each training data point, which is the Matrix Factorization prediction. Further we have $K_2$ similarity matrices given which in the scope of this thesis are the matrices $S_{i,j}^1$ and $S_{i,j}^2$ as defined in equation \ref{simi_1} and equation \ref{simi_2} respectively. In the learning step, we want to find the $\alpha$ and $\beta$ weights, that optimise the conditional log-likelihood of the CCRF on the training data:
+This section describes the parameter learning procedure of the CCRF for quadratic vertex and edge functions as described above. Assume we are given training values $Y=\{y_1,\dots,y_n\}$. Additionally, for each $y_i$ we have given the prediction $X_{i,k}$ that regressor $k$ would have predicted. As explained above, for the model in this thesis we have $K_1=1$ and thus we have only one prediction $X_{i,1}$ for each training data point, which is the Matrix Factorization prediction. Further we have $K_2$ similarity matrices given, which in the scope of this thesis can for example be the matrices $S_{i,j}^1$ and $S_{i,j}^2$ as defined in equation \ref{simi_1} and equation \ref{simi_2} respectively. In the learning step, we want to find the $\alpha$ and $\beta$ weights, that optimise the conditional log-likelihood of the CCRF on the training data:
 
 \begin{equation}  
 \label{eq:log_likelihood}
@@ -181,7 +181,35 @@ As described above, the CCRF can be viewed as a multivariate Gaussian. Therefore
 \begin{equation}
 Y' = \argmax_{Y} P(Y|X) = \mu = \Sigma\boldsymbol{b}
 \end{equation}
-This way, the CCRF predicts the missing values \textit{as well as} the values already in the training set. In order not to predict the known values anew, the resulting multivariate Gaussian can be conditioned on the training data.
+This way, the CCRF predicts the missing values \textit{as well as} the values already in the training set. In order not to predict the known values anew, the resulting multivariate Gaussian can be conditioned on the known training values:
+
+Let $Y' \sim \mathcal{N}(\mu, \Sigma)$ denote the normal distribution that is defined by $\Sigma$ and $\mu$ as derived above.
+$Y'$ can be partitioned into values that we wish to predict $y_1$ and known values $y_2$ as follows:
+\begin{center}
+$Y' = \begin{pmatrix}
+y_1 \\
+y_2
+\end{pmatrix}$
+\end{center}
+Let the length of $y_1$ be $q$ and the total number of values to predict be $N$. $\mu$ and $\Sigma$ can be partitioned accordingly as follows:
+\begin{center}
+$\mu=\begin{pmatrix}
+\mu_1\\
+\mu_2\\
+\end{pmatrix}$
+\end{center}
+\begin{center}
+$\Sigma = \begin{pmatrix}
+\Sigma_{11} & \Sigma_{12} \\
+\Sigma_{21} & \Sigma_{22}
+\end{pmatrix}$
+\end{center}
+where $\mu_1$ is of length $q$, $\mu_2$ is of length $N-q$, $\Sigma_{11}\in q \times q$, $\Sigma_{12} \in q \times (N-q)$, $\Sigma_{21} \in (N-q) \times q$ and $\Sigma_{22} \in (N-q) \times (N-q)$. The conditional of $y_1$ on $y_2=a$ is again a multivariate normal Gaussian $(y_1 | y_2 = a) \sim \mathcal{N} (\hat{\mu}, \hat{\Sigma})$, with
+\begin{center}
+$\hat{\mu} = \mu_1 + \Sigma_{12}\Sigma_{22}^{-1}(a-\mu_2)$\\
+$\hat{\Sigma} = \Sigma_{11} - \Sigma_{12}\Sigma_{22}^{-1}\Sigma_{21}$
+\end{center}
+
 
 \subsection{MF+CCRF}
 \label{sec:MFCCRF}
@@ -189,14 +217,14 @@ This way, the CCRF predicts the missing values \textit{as well as} the values al
 This section gives an overview of the combined MF+CCRF model. Assume we have a matrix $R \in \mathbb{R} ^{|D| \times |T|}$ given and corresponding similarity matrices $S_D \in \mathbb{R}^{|D| \times |D|}$ and $S_T \in \mathbb{R}^{|T| \times |T|}$ for the drugs $D$ and targets $T$ as described in sec \ref{sec:Notation}. It is our goal to predict the binding affinities of those drug-target pairs in $R$ for which no binding value is given. The given binding affinities serve as training data.
 
 The main part of the MF+CCRF model is on the CCRF part. The purpose of MF is to give a first prediction on the missing drug target pairs which is then refined by the CCRF. The CCRF interpolates between similar drugs and targets, where similarity is defined through the similarity matrices. This interpolation can happen either between two drug-target pairs, where a prediction is made for both pairs or from a known affinity value of one drug-target pair to a pair that is predicted. The CCRF learns the importance of the MF prediction and the importance of the interpolation between drug-target pairs from the training data.
-Assume that $Y_{train} = \{y_1, \dots, y_n\}$ is the set of known binding values in $R$. This means that $x_1$ is the MF prediction on training value $y_1$, $x_2$ is the MF prediction on training value $y_2$ and so on. Although the vector $X_{train}$ contains the prediction of MF on the training data itself it should represent the performance of MF on the actual missing values. In order not to overfit the Matrix Factorization model on the training data, when obtaining $X_{train}$ (as this would result in an over optimistic vector $X_{train}$), the training data is partitioned into 5 folds of which 4 folds are used as training data to predict the fold that was left out. The procedure is repeated for each fold to get the complete vector $X_{train}$ as illustrated in figure \ref{fig:ccrf_X}. Each element in $Y_{train}$ and each element in $X_{train}$ correspond to a node of the graphical structure of the CCRF as illustrated in ??. The edges of the graphical model are defined through the similarity matrices of the drugs and targets. One possible way of connecting the nodes is by connecting each drug to its $k$ most similar drugs and similarly connect each target to its $k$ most similar targets. Another way of chosing the edges is by connecting all drugs and targets respectively whose similarity is above a user defined threshold. Following the notation in \ref{sec:CCRF}, we have one initial prediction $X_{train}$ (thus $K_1=1$ as mentioned in \ref{sec:CCRF}). Looking back at equation \ref{eq:CCRF_main}, we see that $K_2$ different similarity matrices $S_{i,j}^k, k \in \{1,\dots,K_2\}$ can be given for the nodes. We can for example choose to learn one parameter $\beta$ for all edges but we can also split the edges into edges that are defined through the drug-drug similarity and edges that are defined through the target-target similarity. In the second case we would learn two edge parameters $\beta_1$ and $\beta_2$. Other variations are of course possible, such as learning separate edge parameters for each drug and target. Figure ?? shows an example, where all drugs and targets are connected to its $k$ nearest neighbors and illustrates the two cases of learning one parameter for all edges and learning two parameters for the drugs and targets respectively. Note that the $S_{i,j}^k$ matrices are of dimension $n \times n$ where $n$ is the number of nodes in the CCRF. For the training step, the number of nodes in the CCRF is $n = Y_{train}$
+Assume that $Y_{train} = \{y_1, \dots, y_n\}$ is the set of known binding values in $R$. This means that $x_1$ is the MF prediction on training value $y_1$, $x_2$ is the MF prediction on training value $y_2$ and so on. Although the vector $X_{train}$ contains the prediction of MF on the training data itself it should represent the performance of MF on the actual missing values. In order not to overfit the Matrix Factorization model on the training data, when obtaining $X_{train}$ (as this would result in an over optimistic vector $X_{train}$), the training data is partitioned into 5 folds of which 4 folds are used as training data to predict the fold that was left out. The procedure is repeated for each fold to get the complete vector $X_{train}$ as illustrated in figure \ref{fig:ccrf_X}. Each element in $Y_{train}$ and each element in $X_{train}$ correspond to a node of the graphical structure of the CCRF as illustrated in Figure \ref{fig:ccrf_param_learn}. The edges of the graphical model are defined through the similarity matrices of the drugs and targets. One possible way of connecting the nodes is by connecting each drug to its $k$ most similar drugs and similarly connect each target to its $k$ most similar targets. Another way of chosing the edges is by connecting all drugs and targets respectively whose similarity is above a user defined threshold. Following the notation in \ref{sec:CCRF}, we have one initial prediction $X_{train}$ (thus $K_1=1$ as mentioned in \ref{sec:CCRF}). Looking back at equation \ref{eq:CCRF_main}, we see that $K_2$ different similarity matrices $S_{i,j}^k, k \in \{1,\dots,K_2\}$ can be given for the nodes. We can for example choose to learn one parameter $\beta$ for all edges but we can also split the edges into edges that are defined through the drug-drug similarity and edges that are defined through the target-target similarity. In the second case we would learn two edge parameters $\beta_1$ and $\beta_2$. Other variations are of course possible, such as learning separate edge parameters for each drug and target. Figure \ref{fig:ccrf_param_learn} shows an example, where all nodes are connected to those nodes where the drug or target similarity is above a threshold of 0.9. Note that the $S_{i,j}^k$ matrices are of dimension $n \times n$ where $n$ is the number of nodes in the CCRF. For the training step, the number of nodes in the CCRF is $n = Y_{train}$
  and thus $S_{i,j} \in \mathbb{R}^{|Y_{train}| \times |Y_{train}|}$. For the prediction step, the number of nodes in the CCRF is equal to the number of cells in the matrix $R$ and thus $S_{i,j} \in \mathbb{R}^{|D||T| \times |D||T|}$
 
 \begin{figure}
 \begin{center}
 \includegraphics[scale=0.6]{ccrf_X.png}
 \end{center}
-\caption{Illustration of steps to get vector $X$: The training data is partitioned into k folds. For each fold, the training data is masked and MF predicts all remaining values in the matrix including the masked fold. Vector $X$ is obtained, by combining the predictions of each fold. Note that the vector $X$ represents the predictions of the given matrix values as a vector in row-first order and that the length of the vector $X$ is equal to the number of training observations . In this example, a matrix of 4 drugs and 4 targets with 9 training points is given, thus the length of $X$ is 9.}
+\caption[Illustrations of steps to get vector $X$]{Illustration of steps to get vector $X$: The training data is partitioned into k folds. For each fold, the training data is masked and MF predicts all remaining values in the matrix including the masked fold. Vector $X$ is obtained, by combining the predictions of each fold. Note that the vector $X$ represents the predictions of the given matrix values as a vector in row-first order and that the length of the vector $X$ is equal to the number of training observations . In this example, a matrix of 4 drugs and 4 targets with 9 training points is given, thus the length of $X$ is 9.}
 \label{fig:ccrf_X}
 \end{figure}
 
@@ -205,8 +233,8 @@ Assume that $Y_{train} = \{y_1, \dots, y_n\}$ is the set of known binding values
 \begin{center}
 \includegraphics[scale=0.6]{ccrf_input.png}
 \end{center}
-\caption{Illustration of Parameter Learning: Input for the learning step of the CCRF are the given observations in the drug-target matrix, the vector $X$ that was predicted by MF, and the similarity matrices of the drugs and targets. Here, the given observations are transformed into a vector $Y$ in row-first order (corresponding to vector $X$). The graphical structure of the CCRF is defined by the similarity matrices of the drugs and targets. A threshold $t$ can be applied to connect only those nodes that have a similarity $>t$. In the above example, drugs $(d_1, d_3)$ and $(d_3, d_4$) and targets $(t_2, t_4)$ have similarity scores above the threshold. Thus the nodes $(1,5)$ and $(2,6)$ are connected (because they belong to drugs $(d_1, d_3)$. Further the nodes $(5,7)$ and $(6,8)$ are connected (because they belong to drugs ($d_3, d_4$)) and the nodes $(4,8)$ are connected because they belong to targets $(t_2, t_4)$. One parameter $\alpha$ is learned for the dependece between $Y$ and $X$. Another parameter $\beta_1$ is learned for the dependence between similar drugs (green edges) and a third parameter $\beta_2$ is learned for the dependence between similar targets (orange edges).}
-\label{fig:ccrf_X}
+\caption[Illustration of Parameter Learning]{Illustration of Parameter Learning: Input for the learning step of the CCRF are the given observations in the drug-target matrix, the vector $X$ that was predicted by MF, and the similarity matrices of the drugs and targets. Here, the given observations are transformed into a vector $Y$ in row-first order (corresponding to vector $X$). The graphical structure of the CCRF is defined by the similarity matrices of the drugs and targets. A threshold $t$ can be applied to connect only those nodes that have a similarity $>t$. In the above example, drugs $(d_1, d_3)$ and $(d_3, d_4$) and targets $(t_2, t_4)$ have similarity scores above the threshold. Thus the nodes $(1,5)$ and $(2,6)$ are connected (because they belong to drugs $(d_1, d_3)$. Further the nodes $(5,7)$ and $(6,8)$ are connected (because they belong to drugs ($d_3, d_4$)) and the nodes $(4,8)$ are connected because they belong to targets $(t_2, t_4)$. One parameter $\alpha$ is learned for the dependece between $Y$ and $X$. Another parameter $\beta_1$ is learned for the dependence between similar drugs (green edges) and a third parameter $\beta_2$ is learned for the dependence between similar targets (orange edges).}
+\label{fig:ccrf_param_learn}
 \end{figure}
 
 
@@ -235,7 +263,7 @@ A dataset of dimension $m \times n$ ($m$ drugs and $n$ targets) that has underly
 \begin{center}
 \includegraphics[scale=0.6]{numeric_X.png}
 \end{center}
-\caption{Sampling matrix $X$ which is used for the node input of the CCRF distribution. First two latent-factor-matrices $LF_d$ and $LF_t$ of dimension $n \times k$ and $m \times k$, where $n$ is the number of drugs, $m$ is the number of targets and $k$ is the number of latent factors (here $k=10$ is chosen arbitrarily) are sampled randomly. $X$ is defined as the product $X=LF_d LF_t^T$ and is used as the values for the node input of the CCRF.}
+\caption[sampling CCRF input]{Sampling matrix $X$ which is used for the node input of the CCRF distribution. First two latent-factor-matrices $LF_d$ and $LF_t$ of dimension $n \times k$ and $m \times k$, where $n$ is the number of drugs, $m$ is the number of targets and $k$ is the number of latent factors (here $k=10$ is chosen arbitrarily) are sampled randomly. $X$ is defined as the product $X=LF_d LF_t^T$ and is used as the values for the node input of the CCRF.}
 \label{fig:numX}
 \end{figure}
 
@@ -243,7 +271,7 @@ A dataset of dimension $m \times n$ ($m$ drugs and $n$ targets) that has underly
 \begin{center}
 \includegraphics[scale=0.6]{numeric_structure.png}
 \end{center}
-\caption{Defining the structure of the CRF. Assume each matrix cell is a node of the CCRF. For the numerical experiments, the matrix columns where divided into groups of 10 columns. Each cell in each group was connected to all other cells in the same group, which is illustrated by the archs.}
+\caption[Defining the structure of the CRF]{Defining the structure of the CRF. Assume each matrix cell is a node of the CCRF. For the numerical experiments, the matrix columns where divided into groups of 10 columns. Each cell in each group was connected to all other cells in the same group, which is illustrated by the archs.}
 \label{fig:numStructure}
 \end{figure}
 
@@ -252,7 +280,7 @@ A dataset of dimension $m \times n$ ($m$ drugs and $n$ targets) that has underly
 \begin{center}
 \includegraphics[scale=0.5]{numeric_sample.png}
 \end{center}
-\caption{Example of a dataset that is sampled from the CCRF when the structure is chosen, such as described in Figure \ref{fig:numStructure}. This dataset has the property that the nodes which are interconnected by the structure of the graphical model have similar values.}
+\caption[Example of CCRF sample]{Example of a dataset that is sampled from the CCRF when the structure is chosen, such as described in Figure \ref{fig:numStructure}. This dataset has the property that the nodes which are interconnected by the structure of the graphical model have similar values.}
 \label{fig:numSample}
 \end{figure}
 
