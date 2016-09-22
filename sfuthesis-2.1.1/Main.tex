@@ -1,6 +1,6 @@
 \documentclass{sfuthesis}
 
-\title{fill in title}
+\title{Continuous Conditional Random Fields for Drug Target Interaction Prediction}
 \thesistype{Master}
 \author{Marten Heidemeyer}
 \previousdegrees{%
@@ -13,15 +13,13 @@
 \semester{Fall 2016}
 \date{1 September 2015}
 
-\keywords{}
+\keywords{Drug-target interaction, predictive modeling, machine learning}
 
 \committee{%
-	\chair{}{}
-	\member{}{Senior Supervisor\\Professor}
-	\member{}{Supervisor\\Associate Professor}
-	\member{}{Supervisor\\Adjunct Professor}
-	\member{}{Internal Examiner\\Assistant Professor\\School of Engineering Science}
-	\member{}{External Examiner\\Professor\\Department of Quantum Fields\\Mars University}
+	\chair{Faraz Harach}{}
+	\member{}{Prof. Martin Ester\\Professor}
+	\member{}{Dr. Artem Cherkasov\\Professor}
+	\member{}{Leonid Chindelevitch\\Assistant Professor\\School of Computing Science}
 }
 
 %   PACKAGES AND CUSTOMIZATIONS  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -55,6 +53,8 @@
 \usepackage{caption}
 \usepackage{tikz}
 \usepackage{mathrsfs}
+\usepackage{algpseudocode} 
+\usepackage{algorithm}
 
 \DeclareMathOperator*{\argmax}{argmax}
 
@@ -70,20 +70,24 @@
 %
 
 \begin{document}
+
 \doublespacing
 \large{
 \frontmatter
 \maketitle{}
-%\makecommittee{}
+\makecommittee{}
 
 \begin{abstract}
-	
+Knowledge about the interaction between drugs and target proteins is essential in the drug discovery process.
+Understanding the relationship between compounds and proteins through wetlab experiments alone is time-consuming and costly. With the motivation to support the experimental work by systematically prioritizing the most potent compounds for a target, numerous methods for the in-silico prediction of drug-target interaction have been proposed recently and high performance on binary datasets, where drug-target pairs are classified as either binding or non-binding have been reported. A possible drawback of binary datasets is that missing values and non interacting drug-target pairs are not differentiated. In this thesis, a model is developed that predicts the binding strengths of drug-target pairs as continuous values and thus incorporates the whole interaction spectrum from true negative to true positive interactions in the learning phase. The developed model combines two previously used approaches for the drug-target problem, which are Matrix Factorization and Conditional Random Fields. The model is evaluated in terms of the metrics $AUC$, $AUPR$ and $CI$ on three datasets and a slight improvement in performance is observered when compared to the state of the art method.
 \end{abstract}
 
 \begin{dedication} % optional
+I dedicate this work to Mama, Papa and all my friends
 \end{dedication}
 
 \begin{acknowledgements} % optional
+I would like to express my gratitude to my senior supervisor Prof. Martin Ester for his guidance, patience and support throughout my master studies. 
 \end{acknowledgements}
 
 \addtoToC{Table of Contents}\tableofcontents\clearpage
@@ -122,8 +126,4 @@
 	\bibliographystyle{plain}
 	\bibliography{references}
 
-\begin{appendices} % optional
-	\chapter{Code}
-\end{appendices}
-}
 \end{document}

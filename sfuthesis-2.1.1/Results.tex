@@ -1,6 +1,21 @@
-\chapter{Results}
+\section{Results}
+\label{chapt:res}
+This chapter lists the results of the experiments as described in the previous section for the comparison model $KronRLS$ and the \textit{MF+CCRF} model.
+Tables \ref{res:ci}, \ref{res:auc} and \ref{res:aupr} list the performances in terms of $CI$, $AUC$ and $AUPR$ respectively for both methods and all three datasets. The cases of integrating either only one similarity matrix or both similarity matrix are listed separately as discussed above. For the \textit{MF+CCRF} model the performance of using only \textit{MF} is listed additionally. For the $KronRLS$ model the table entry where none of the similarities is used, is left empty. We observe the following:
 
-\begin{center}
+\begin{itemize}
+\item Regarding the performance of the \textit{MF+CCRF} model, we observe that the integration of the similarity matrices through the \textit{CCRF} brings a significant improvement in performance when compared to the performance of using only \textit{MF}. The improvement is most evident for the classification metrics $AUC$ and $AUPR$. For the \textit{Davis} dataset, the integration of the similarity matrices \textit{CCRF} raises the $AUC$ from $0.86$ (\textit{MF}) to $0.95$ (\textit{MF+CCRF}, both similarity matrices). For the \textit{Metz} dataset, the \textit{AUC} is raised from $0.88$ (\textit{MF}) to $0.94$ (\textit{MF+CCRF}, both similarity matrices). In terms of \textit{AUPR}, the \textit{CCRF} rises the performance from $0.49$ (\textit{MF}) to $0.67$ (\textit{MF+CCRF}, both similarity matrices) on the \textit{Davis} dataset, from $0.33$ (\textit{MF}) to $0.58$ (\textit{MF+CCRF}, both similarity matrices) on the \textit{Metz} dataset and from $0.63$ (\textit{MF}) to $0.72$ (\textit{MF+CCRF}, both similarity matrices) on the \textit{KIBA} dataset.
+\item When comparing the performance of \textit{MF+CCRF} to $KronRLS$ in the settings where only one of the similarity matrices is used, we observe that \textit{MF+CCRF} significantly outperforms $KronRLS$ on most of the datasets. In particular for the \textit{KIBA} dataset, \textit{MF+CCRF} raises the $CI$ from $0.67$ to $0.80$ when only the drug similarity is used and from $0.65$ to $0.80$ when only the target similarity is used. On the \textit{Metz} dataset, \textit{MF+CCRF} raises the $CI$ from $0.74$ to $0.81$ when only the drug similarity is used and from $0.69$ to $0.78$ when only the target similarity is used. Further, \textit{MF+CCRF} raises the $AUC$ on the Metz dataset from $0.86$ to $0.91$, when using only the drug similarity and from $0.84$ to $0.90$, when using only the target similarity. On the \textit{Davis} dataset, \textit{MF+CCRF} raises the $AUC$ from $0.75$ to $0.81$ when using only the drug similarity.
+\item When integrating both similarity metrics, we observe almost equal performances for $KronRLS$ and \textit{MF+CCRF} for across all datasets and metrics: \textit{MF+CCRF} marginally improves the performance of $KronRLS$ in regard of $CI$ for the \textit{Metz} dataset, where it raises the $CI$ of $0.78$ to $0.82$. In all other cases the performances of $KronRLS$ and \textit{MF+CCRF} are quite similar and do not differ by more than 3$\%$.
+\end{itemize}
+
+
+
+\begin{table}
+\centering
+\captionof{table}{$CI$ of $KronRLS$ and $MF+CCRF$ on the three evaluation datasets.}
+\label{res:ci}
+\resizebox{0.8\textwidth}{!}{
 \begin{tabular}{l | c}
 Dataset & CI \\
 \hline
@@ -8,13 +23,13 @@ Davis &
 \begin{tabular}{c c}
 KronRLS & CCRF \\ \hline
 \begin{tabular}{c|c|c}
-2D & \textbf{0.88} & \\ \hline
-$\delta$ &  &\\ \hline
+2D & 0.85 & 0.70\\ \hline
+$\delta$ & 0.84 &\\ \hline
  & SW & $\delta$\\
 \end{tabular} & 
 \begin{tabular}{c|c|c} 
-2D &  \textbf{0.88}& 0.73\\ \hline
-$\delta$ & 0.86 & \\ \hline
+2D & 0.88 & 0.73 \\ \hline
+$\delta$ & 0.86 & 0.81\\ \hline
 & SW & $\delta$ \\
 \end{tabular} 
 \end{tabular} \\
@@ -22,13 +37,13 @@ Metz &
 \begin{tabular}{c c}
 KronRLS & CCRF \\ \hline
 \begin{tabular}{c|c|c}
-2D & 0.79 &   \\ \hline
-$\delta$ & & \\ \hline
+2D & 0.78 & 0.74   \\ \hline
+$\delta$ & 0.69 & \\ \hline
  & SW & $\delta$\\
 \end{tabular} & 
 \begin{tabular}{c|c|c} 
-2D & \textbf{0.82} & \\ \hline
-$\delta$ &  0.78 & \\ \hline
+2D & 0.82 & 0.81  \\ \hline
+$\delta$ & 0.78 & 0.78\\ \hline
 & SW & $\delta$ \\
 \end{tabular} 
 \end{tabular} \\
@@ -36,20 +51,25 @@ Kiba&
 \begin{tabular}{c c}
 KronRLS & CCRF \\ \hline
 \begin{tabular}{c|c|c}
-2D & 0.78 & \\ \hline
-$\delta$ & & \\ \hline
+2D & 0.79 & 0.67\\ \hline
+$\delta$ & 0.65 & \\ \hline
  & SW & $\delta$\\
 \end{tabular} & 
 \begin{tabular}{c|c|c} 
-2D & \textbf{0.81} & \\ \hline
-$\delta$ & & \\ \hline
+2D & 0.81 & 0.80\\ \hline
+$\delta$ & 0.80 & 0.79 \\ \hline
 & SW & $\delta$ \\
 \end{tabular} 
 \end{tabular}\\
-\end{tabular}
-\end{center}
+\end{tabular}}
+\end{table}
 
-\begin{center}
+
+\begin{table}
+\centering
+\captionof{table}{$AUC$ of $KronRLS$ and $MF+CCRF$ on the three evaluation datasets.}
+\label{res:auc}
+\resizebox{0.8\textwidth}{!}{
 \begin{tabular}{l | c}
 Dataset & AUC\\
 \hline
@@ -57,12 +77,12 @@ Davis &
 \begin{tabular}{c c}
 KronRLS & CCRF \\ \hline
 \begin{tabular}{c|c|c}
-2D & \textbf{0.95} & 0.73\\ \hline
-$\delta$ & 0.93 & \\ \hline
+2D & 0.93 & 0.75 \\ \hline
+$\delta$ & 0.91  &  \\ \hline
  & SW & $\delta$\\
 \end{tabular} & 
 \begin{tabular}{c|c|c} 
-2D &\textbf{0.95} & 0.81\\ \hline
+2D & 0.95 & 0.81\\ \hline
 $\delta$ & 0.93 &  0.86\\ \hline
  & SW & $\delta$ \\
 \end{tabular} 
@@ -77,7 +97,7 @@ $\delta$ & 0.84 & \\ \hline
  & SW & $\delta$\\
 \end{tabular} & 
 \begin{tabular}{c|c|c} 
-2D & \textbf{0.94} & \\ \hline
+2D & 0.94 & 0.93\\ \hline
 $\delta$ & 0.90 & 0.88\\ \hline
  & SW & $\delta$ \\
 \end{tabular} 
@@ -86,21 +106,24 @@ Kiba&
 \begin{tabular}{c c}
 KronRLS & CCRF \\ \hline
 \begin{tabular}{c|c|c}
-2D & \textbf{0.90} & \\ \hline
-$\delta$ & & \\ \hline
+2D & 0.88 & 0.85\\ \hline
+$\delta$ & 0.84 & \\ \hline
  & SW & $\delta$\\
 \end{tabular} & 
 \begin{tabular}{c|c|c} 
-2D & 0.85 & \\ \hline
-$\delta$ & &0.83 \\ \hline
+2D & 0.85 & 0.83\\ \hline
+$\delta$ & 0.83 &0.83 \\ \hline
  & SW & $\delta$ \\
 \end{tabular} 
 \end{tabular}  \\
-\end{tabular}\\
-\end{center}
+\end{tabular}}\\
+\end{table}
 
-\begin{center}
-\vspace{1cm}
+\begin{table}
+\centering
+\captionof{table}{$AUPR$ of $KronRLS$ and $MF+CCRF$ on the three evaluation datasets.}
+\label{res:aupr}
+\resizebox{0.8\textwidth}{!}{
 \begin{tabular}{l | c}
 Dataset & AUPR \\
 \hline
@@ -108,13 +131,13 @@ Davis &
 \begin{tabular}{c c}
 KronRLS & CCRF \\ \hline
 \begin{tabular}{c|c|c}
-2D & \textbf{0.67} & 0. 27\\ \hline
+2D & 0.68 & 0.27\\ \hline
 $\delta$ & 0.64 &\\ \hline
  & SW & $\delta$\\
 \end{tabular} & 
 \begin{tabular}{c|c|c} 
-2D & \textbf{0.67} & 0.34\\ \hline
-$\delta$ & 0.59  & \\ \hline
+2D & 0.67 & 0.34\\ \hline
+$\delta$ & 0.60  & 0.49\\ \hline
  & SW & $\delta$ \\
 \end{tabular} 
 \end{tabular} \\
@@ -127,31 +150,40 @@ $\delta$ & 0.28 & \\ \hline
  & SW & $\delta$\\
 \end{tabular} & 
 \begin{tabular}{c|c|c} 
-2D & \textbf{0.58} & 0.51\\ \hline
+2D & 0.58 & 0.55\\ \hline
 $\delta$ & 0.43 & 0.33\\ \hline
  & SW & $\delta$ \\
 \end{tabular} 
 \end{tabular} \\
-Kiba 1& 
+Kiba & 
 \begin{tabular}{c c}
 KronRLS & CCRF \\ \hline
 \begin{tabular}{c|c|c}
-2D & \textbf{0.75} & \\ \hline
-$\delta$ & & \\ \hline
+2D & 0.75 & 0.67 \\ \hline
+$\delta$ & 0.66 & \\ \hline
  & SW & $\delta$\\
 \end{tabular} & 
 \begin{tabular}{c|c|c} 
-2D & 0.72 & \\ \hline
-$\delta$ & & \\ \hline
+2D & 0.72 & 0.68\\ \hline
+$\delta$ & 0.69 & 0.63 \\ \hline
  & SW & $\delta$ \\
 \end{tabular} \\
 \end{tabular}\\
+\end{tabular}}\\
+\end{table}
 
-\end{tabular}\\
-\end{center}
+\chapter{Discussion and Future Work}
 
-Runtime: Davis Drug CCRFs: start 3:51, end: 3:54
-Runtime: Davis Target CCRFs: start 5:53
-Runtime: Davis Clusters: start 6:17
-Runtime: Metz Drug CCRFs: start 9:57
+\section{Discussion}
+
+In this work, a new method, \textit{MF+CCRF}, for the prediction of drug target interaction, which combines Matrix Factorization and Continuous Conditional Random Fields is proposed. In contrast to the vast majority of previous work on machine-learning based methods for drug-target interaction prediction that classify drug-target pairs as either binding or non-binding the proposed model predicts the binding affinity as continuous values, which better reflects the true complexity of the drug-target prediction problem. The model is evaluated on three datasets which are arguably of especially high quality in terms of data homogeneity as the first two data sets, \textit{Davis} and \textit{Metz}, originate from individual wetlabs, where the measurements were taken under unified experimental conditions and for the third dataset, \textit{KIBA}, observations from multiple sources where carefully integrated. Rather than containing only true positive interactions as the previously used binary datasets, the datasets that were used here
+contain standardized mappings of the $K_i$, $K_d$ and $KIBA$-scores which provide broader insights into the interaction patterns of the drugs and their potential protein targets. The obtained results in terms of the ranking metric $CI$ and the classification metrics $AUC$ and $AUPR$ show that the proposed methods performs as well as the sate of the art method $KronRLS$. As described in section \ref{bincont}, $KronRLS$ predicts binary values when the classification metrics $AUC$ and $AUPR$ are applied, while $MF+CCRF$ predicts continuous values on which the binarization threshold is applied after the prediction step. $MF+CCRF$ still performs as good as $KronRLS$ in terms of $AUC$ and $AUPR$ and therefore one can argue that $MF+CCRF$ has the advantage that for different binarization thresholds, $MF+CCRF$ does not need to be retrained, in contrast to $KronRLS$. Especially for the cases when only one similarity matrix of either the drugs or the targets is given, $MF+CCRF$ outperforms $KronRLS$ significantly across almost all datasets and metrics. 
+
+Further, we observe that the integration of the similarity matrices through the $CCRF$ significantly improves the performance of Matrix Factorization alone. This suggests that the model can be used to improve the $MF$ prediction in similar settings, for example in user-item recommendation tasks, when suitable similarity matrices for the users/items are given.
+
+
+\section{Future Work}
+One issue that is not addressed in this work is the problem of the biased nature of drug-target datasets. The used evaluation datasets are usually highly biased, containing only a small number of drugs and targets with many observations and a large number of drugs and targets with only a few observations. In the cross validation setting this leads to overoptimistic results because the model is mainly evaluated on the few drugs and targets with many observations and the reported evaluation metrics can not be generalized to the complete set of drugs and targets. One direction of future work would be to provide researchers a measure of the confidence of the prediction, so that the most confident predictions can be validated in wetlab experiments.
+
+An other direction of future work would be to find a better strategy for the parameter tuning of the presented model. $KronRLS$ uses an inner cross validation step to find the optimal regularization parameter $\lambda$. A similar strategy could be applied here, where the $MF+CCRF$ model could automatically search for drug-similarity and target-similarity thresholds, that define which nodes of the CCRF to connect, instead of using the fixed parameter setting of connecting all $k$-nearest neighbors.
 

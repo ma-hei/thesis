@@ -140,6 +140,7 @@
 %
 
 \RequirePackage{lmodern}
+
 \RequirePackage[T1]{fontenc}
 
 

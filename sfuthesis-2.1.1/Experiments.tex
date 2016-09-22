@@ -4,182 +4,38 @@
 
 \section{Experimental Settings}
 
-\subsection{Integrating the similarity matrices}
-For the MF+CCRF method that is developed in this thesis it is possible to integrate:
-\begin{itemize}
-\item none of the similarity matrices
-\item only the drug drug similarity matrix
-\item only the target target similarity matrix
-\item both similarity matrices
-\end{itemize}
-Here, using no similarity metric means to use just the MF prediction. When only the drug-drug similarity metric is used, we build graphical models for each column of the matrix. Thus a separate set of parameters is learned and independent predictions are made for each target. Similarly, if only the target-target similarity metric is used, a separate graphical model is build for each row of the matrix and separate paratemers are learned and independant predictions made for each drug. When both similarity matrices are used each cell of the matrix becomes a node of the CCRF and by default we would learn only one set of parameters for this CCRF. The datasets that were used for the experiments in this thesis are too large to create a single graphical model for all drugs and targets because in the inference step it is necessary to compute the inverse of a matrix of size $|D||T| \times |D||T|$. In order to integrate both similarity matrices for the CCRF the drug-target matrix was clustered into smaller submatrices of feasible size. 
+\subsection{Binary vs. Continuous Prediction}
+\label{bincont}
+For the evaluation of the model, a performance evaluation for the classification of drug-target pairs into binding or non-binding was also included, using the metrics \textit{AUC} and \textit{AUPR}. Therefore, the datasets where binarized by applying thresholds as it was done in \cite{pahikkala2014toward}. The $MF+CCRF$ model can only predict continuous values, therefore the threshold was applied on the true values after the prediction step, in order to compute $AUC$ and $AUPR$. In the \textit{Davis} and \textit{Metz} datasets, the higher the $pK_d$ or $pK_i$ value, the higher the binding affinity between a drug and a target. For the \textit{Metz} dataset, the same threshold of $pK_i\geq7.6$ was used as suggested in \cite{pahikkala2014toward} to assign a label of $1$ meaning binding and $0$ meaning non-binding. For the \textit{Davis} dataset, a threshold of $pK_d\geq7.0$ which is a bit less stringent than the threshold that is suggested in \cite{pahikkala2014toward} is used. In the original \textit{KIBA} dataset, the lower the \textit{KIBA}-score, the higher the binding affinity and \cite{tang2014making} suggests a threshold of \textit{KIBA}-score$\leq3$ to binarize the dataset. In an additional preprocessing step, the \textit{KIBA}-scores were transformed by taking the negative of each value and adding the minimum to all values in order to obtain a threshold where all values \textit{above} the threshold are classified as binding. The \textit{KIBA} threshold of $3$ in the un-transformed dataset then becomes $12.1$ in the transformed \textit{KIBA} dataset. 
 
+It is noteworthy, that when the classification metrics $AUC$ and $AUPR$ are applied, $KronRLS$ learns and predicts binary labels, meaning that the datasets are binarized according to the cutoff thresholds before the training step. The $MF+CCRF$ method in contrast, only predicts continuous values and the cutoff threshold is applied after the prediction step to calculate the $AUC$ and $AUPR$. One can argue, that given two models $A$ and $B$, where $A$ learns to predict continuous values and model $B$ learns to predict binary values, and the performance of model $A$ in terms of $AUC$ and $AUPR$ is as good as the performance of model $B$, then model $A$ is advantageous because it does not need to be retrained (as model $B$) when the cutoff threshold for the dataset is changed.
+
+\subsection{Performance Evaluation}
+The model is evaluated using 5 fold cross-validation. In this procedure, the given values in the datasets are randomly partitioned into 5 subsets of equal size. Each subset is in turn used as validation data to test the method that was trained on the remaining 4 subsets. Both, the \textit{MF+CCRF} model and the comparison model $KronRLS$ can use as input either only one of the similarity metrics or both (in addition to the training matrix with the observed binding affinities). When $KronRLS$ gets as input only one of the similarity matrices for example only the drug similarity, it automatically generates a similarity kernel for the targets, where each target is only similar to itself, meaning the identity matrix is imputed for the targets (and vice-versa, when only the target-similarity is given, the identity matrix is used for the drugs). For each dataset, for each performance metric and for each method ($KronRLS$ and \textit{MF+CCRF}), we get 3 evaluation scores that can be compared among the two methods as illustrated in. For the \textit{MF+CCRF} model a fourth evaluation score is listed in the results section, which is the performance of using no similarity information, resulting in the prediction of only $MF$. The used performance metrics are described in the following sections. Figure \ref{fig:evaluation_tables} explains how to read the tables, listing the performance scores
 
 \begin{figure}
-\begin{tikzpicture}[scale=0.56]
-\tikzstyle{every node} = [draw, shape=circle]
-\node[draw=none] (a) at (-1, 3.5) {a)};
-\node (a) at (0, 0) {\tiny $Y_{i, 1}$};
-\node (b) at (1.5, 0) {\tiny $Y_{i, 2}$};
-\node (c) at (3, 0) {\tiny $Y_{i, 3}$};
-\node (d) at (4.5, 0) {\tiny $Y_{i, 4}$};
-\node (e) at (6, 0) {\tiny $Y_{i, 5}$};
-\node (f) at (7.5, 0) {\tiny $Y_{i, 6}$};
-\draw [-, draw=blue] (a) to  [out=280,in=260] (c);
-\draw [-, draw=blue] (b) to  [out=280,in=260] (c);
-\draw [-, draw=blue] (e) to  [out=280,in=260] (f);
-\draw [-, draw=blue] (c) to  [out=280,in=260] (d);
-\draw [-, draw=blue] (d) to  [out=280,in=260] (e);
-\draw [-, draw=blue] (d) to  [out=280,in=260] (f);
-
-\node [fill=gray!30](ax) at (0, 2) {\tiny $X_{i, 1}$};
-\node [fill=gray!30](bx) at (1.5, 2) {\tiny $X_{i, 2}$};
-\node [fill=gray!30](cx) at (3, 2) {\tiny $X_{i, 3}$};
-\node [fill=gray!30](dx) at (4.5, 2) {\tiny $X_{i, 4}$};
-\node [fill=gray!30](ex) at (6, 2) {\tiny $X_{i, 5}$};
-\node [fill=gray!30](fx) at (7.5, 2) {\tiny $X_{i, 6}$};
-
-\draw [-] (a) to  [out=90,in=270] (ax);
-\draw [-] (b) to  [out=90,in=270] (bx);
-\draw [-] (c) to  [out=90,in=270] (cx);
-\draw [-] (d) to  [out=90,in=270] (dx);
-\draw [-] (e) to  [out=90,in=270] (ex);
-\draw [-] (f) to  [out=90,in=270] (fx);
-
-\node[draw=none] (a) at (9, 5.2) {b)};
-\node (a) at (10, 4) {\tiny $Y_{1,j}$};
-\node (b) at (10, 2.5) {\tiny $Y_{2,j}$};
-\node (c) at (10, 1) {\tiny $Y_{3,j}$};
-\node (d) at (10, -0.5) {\tiny $Y_{4,j}$};
-\node (e) at (10, -2) {\tiny $Y_{5,j}$};
-\node (f) at (10, -3.5) {\tiny $Y_{6,j}$};
-
-\node [fill=gray!30](ax) at (12, 4) {\tiny $X_{1,j}$};
-\node [fill=gray!30](bx) at (12, 2.5) {\tiny $X_{2,j}$};
-\node [fill=gray!30](cx) at (12, 1) {\tiny $X_{3,j}$};
-\node [fill=gray!30](dx) at (12, -0.5) {\tiny $X_{4,j}$};
-\node [fill=gray!30](ex) at (12, -2) {\tiny $X_{5,j}$};
-\node [fill=gray!30](fx) at (12, -3.5) {\tiny $X_{6,j}$};
-
-\draw [-] (a) to  [out=0,in=180] (ax);
-\draw [-] (b) to  [out=0,in=180] (bx);
-\draw [-] (c) to  [out=0,in=180] (cx);
-\draw [-] (d) to  [out=0,in=180] (dx);
-\draw [-] (e) to  [out=0,in=180] (ex);
-\draw [-] (f) to  [out=0,in=180] (fx);
-
-\draw [-, draw=red] (a) to  [out=190,in=170] (c);
-\draw [-, draw=red] (c) to  [out=190,in=170] (d);
-\draw [-, draw=red] (d) to  [out=190,in=170] (f);
-\draw [-, draw=red] (b) to  [out=190,in=170] (c);
-\draw [-, draw=red] (c) to  [out=190,in=170] (e);
-
-\node[draw=none] (a) at (13.5, 5.2) {c)};
-\node (a) at (14.5, 4) {\tiny $Y_{1,1}$};
-\node (b) at (14.5, 2.5) {\tiny $Y_{2, 1}$};
-\node (c) at (14.5, 1) {\tiny $Y_{3,1}$};
-\node (d) at (14.5, -0.5) {\tiny $Y_{4, 1}$};
-\node (e) at (14.5, -2) {\tiny $Y_{5, 1}$};
-\node (f) at (14.5, -3.5) {\tiny $Y_{6, 1}$};
-
-\node [fill=gray!30](ax) at (16.2, 4) {\tiny $X_{1, 1}$};
-\node [fill=gray!30](bx) at (16.2, 2.5) {\tiny $X_{2, 1}$};
-\node [fill=gray!30](cx) at (16.2, 1) {\tiny $X_{3, 1}$};
-\node [fill=gray!30](dx) at (16.2, -0.5) {\tiny $X_{4, 1}$};
-\node [fill=gray!30](ex) at (16.2, -2) {\tiny $X_{5, 1}$};
-\node [fill=gray!30](fx) at (16.2, -3.5) {\tiny $X_{6, 1}$};
-
-
-\draw [-] (a) to  [out=0,in=180] (ax);
-\draw [-] (b) to  [out=0,in=180] (bx);
-\draw [-] (c) to  [out=0,in=180] (cx);
-\draw [-] (d) to  [out=0,in=180] (dx);
-\draw [-] (e) to  [out=0,in=180] (ex);
-\draw [-] (f) to  [out=0,in=180] (fx);
-
-\node (a_) at (18.5, 4) {\tiny $Y_{1,2}$};
-\node (b_) at (18.5, 2.5) {\tiny $Y_{2,2}$};
-\node (c_) at (18.5, 1) {\tiny $Y_{2,2}$};
-\node (d_) at (18.5, -0.5) {\tiny $Y_{3,2}$};
-\node (e_) at (18.5, -2) {\tiny $Y_{4,2}$};
-\node (f_) at (18.5, -3.5) {\tiny $Y_{5,2}$};
-
-\node[fill=gray!30] (ax_) at (20.2, 4) {\tiny $X_{1,2}$};
-\node[fill=gray!30] (bx_) at (20.2, 2.5) {\tiny $X_{2,2}$};
-\node[fill=gray!30] (cx_) at (20.2, 1) {\tiny $X_{3,2}$};
-\node[fill=gray!30] (dx_) at (20.2, -0.5) {\tiny $X_{4,2}$};
-\node[fill=gray!30] (ex_) at (20.2, -2) {\tiny $X_{5,2}$};
-\node[fill=gray!30] (fx_) at (20.2, -3.5) {\tiny $X_{6,2}$};
-
-\draw [-] (a_) to  [out=0,in=180] (ax_);
-\draw [-] (b_) to  [out=0,in=180] (bx_);
-\draw [-] (c_) to  [out=0,in=180] (cx_);
-\draw [-] (d_) to  [out=0,in=180] (dx_);
-\draw [-] (e_) to  [out=0,in=180] (ex_);
-\draw [-] (f_) to  [out=0,in=180] (fx_);
-
-\node (a__) at (22.5, 4) {\tiny $Y_{1,3}$};
-\node (b__) at (22.5, 2.5) {\tiny $Y_{2,3}$};
-\node (c__) at (22.5, 1) {\tiny $Y_{3,3}$};
-\node (d__) at (22.5, -0.5) {\tiny $Y_{4,3}$};
-\node (e__) at (22.5, -2) {\tiny $Y_{5,3}$};
-\node (f__) at (22.5, -3.5) {\tiny $Y_{6,3}$};
-
-\node[fill=gray!30] (ax__) at (24.2, 4) {\tiny $X_{1, 3}$};
-\node[fill=gray!30] (bx__) at (24.2, 2.5) {\tiny $X_{2, 3}$};
-\node[fill=gray!30] (cx__) at (24.2, 1) {\tiny $X_{3, 3}$};
-\node[fill=gray!30] (dx__) at (24.2, -0.5) {\tiny $X_{4, 3}$};
-\node[fill=gray!30] (ex__) at (24.2, -2) {\tiny $X_{5, 3}$};
-\node[fill=gray!30] (fx__) at (24.2, -3.5) {\tiny $X_{6,3}$};
-
-\draw [-] (a__) to  [out=0,in=180] (ax__);
-\draw [-] (b__) to  [out=0,in=180] (bx__);
-\draw [-] (c__) to  [out=0,in=180] (cx__);
-\draw [-] (d__) to  [out=0,in=180] (dx__);
-\draw [-] (e__) to  [out=0,in=180] (ex__);
-\draw [-] (f__) to  [out=0,in=180] (fx__);
-
-\draw [-, draw=blue] (a) to  [out=70,in=110] (a_);
-\draw [-, draw=blue] (a_) to  [out=70,in=110] (a__);
-\draw [-, draw=blue] (b) to  [out=70,in=110] (b_);
-\draw [-, draw=blue] (b_) to  [out=70,in=110] (b__);
-\draw [-, draw=blue] (c) to  [out=70,in=110] (c_);
-\draw [-, draw=blue] (c_) to  [out=70,in=110] (c__);
-\draw [-, draw=blue] (d) to  [out=70,in=110] (d_);
-\draw [-, draw=blue] (d_) to  [out=70,in=110] (d__);
-\draw [-, draw=blue] (e) to  [out=70,in=110] (e_);
-\draw [-, draw=blue] (e_) to  [out=70,in=110] (e__);
-\draw [-, draw=blue] (f) to  [out=70,in=110] (f_);
-\draw [-, draw=blue] (f_) to  [out=70,in=110] (f__);
-
-
-\draw [-, draw=red] (a) to  [out=210,in=150] (b);
-\draw [-, draw=red] (b) to  [out=210,in=150] (c);
-\draw [-, draw=red] (b) to  [out=210,in=150] (d);
-\draw [-, draw=red] (d) to  [out=210,in=150] (e);
-\draw [-, draw=red] (e) to  [out=210,in=150] (f);
-
-\draw [-, draw=red] (a_) to  [out=210,in=150] (b_);
-\draw [-, draw=red] (b_) to  [out=210,in=150] (c_);
-\draw [-, draw=red] (b_) to  [out=210,in=150] (d_);
-\draw [-, draw=red] (d_) to  [out=210,in=150] (e_);
-\draw [-, draw=red] (e_) to  [out=210,in=150] (f_);
-
-\draw [-, draw=red] (a__) to  [out=210,in=150] (b__);
-\draw [-, draw=red] (b__) to  [out=210,in=150] (c__);
-\draw [-, draw=red] (b__) to  [out=210,in=150] (d__);
-\draw [-, draw=red] (d__) to  [out=210,in=150] (e__);
-\draw [-, draw=red] (e__) to  [out=210,in=150] (f__);
-\end{tikzpicture}
-\caption[Integrating similarity matrices]{Integrating the similarity matrices: a) integration of only the target similarity matrix. The cells $Y_{i,1},\dots,Y_{i,6}$ indicate the predictions that are to be made for drug $d_i$. $X_{i,1},\dots, X_{i,6}$ indicate the predictions made by Matrix Factorization for those targets. Blue edges indicate similar targets. b) integration of only the drug similarity matrix. The cells $Y_{1,j},\dots,Y_{6,j}$ indicate the predictions that are to be made for target $t_j$. Red edges indicate similar drugs. c) integration of both similarity matrices. The cells $Y_{i,j}$ indicate the predictions that are to be made for the drug-target pairs in the cluster, consisting of drugs $d_1,d_2,d_3$ and targets $t_1,\dots,t_6$.}
+\begin{center}
+\includegraphics[scale=0.65]{evaluation_descr.png}
+\end{center}
+\caption[Description of evaluation tables]{\large{Description of the evaluation tables. 2D refers to the drug similarity (the drug similarity is based on the 2-dimensional structure of the compounds as described above). SW refers to the target similarity and stands for Smith-Waterman as described in the Dataset section. $\delta$ is used in the row/column where the drug/target similarity is not used.}}
+\label{fig:evaluation_tables}
 \end{figure}
 
-\subsection{Parallelization}
+\subsubsection{Evaluation Metrics}
+As suggested in \cite{pahikkala2014toward}, the concordance index ($CI$) can be used as an evaluation metric for the prediction accuracy as it takes into account that the interaction affinities behind drug-target interactions are continuous values rather than binary ones. The intuition behind the $CI$ is as follows: the $CI$ over a set of paired data is the probability that the predictions for two randomly drawn drug-target pairs with different label values are in the correct order, meaning that the prediction $f_i$ for the larger affinity $y_i$ is larger than the prediction $f_j$ for the smaller affinity value $y_j$:
 
+\begin{equation}
+CI = \frac{1}{Z} \sum\limits_{y_i>y_j}h(f_i-f_j)
+\end{equation}
 
-\subsection{Graphical structure of CCRF}
+where $Z$ is a normalization constant that equals the number of data pairs with different label values, and $h(u)$ is the step function returning $1.0$, $0.5$ and $0.0$ for $u>0$, $u=0$ and $u<0$ respectively. The $CI$ ranges between $0.5$ and $1.0$, where $0.5$ corresponds to a random predictor and $1.0$ corresponds to perfect prediction accuracy \cite{pahikkala2014toward}. 
 
-As mentioned in \ref{sec:MFCCRF}, different strategies can be applied to chose the edges of the graphical model. Which of the CCRF nodes are connected is defined through the similarity matrix $S$ in the formulation of the CCRF. Theoretically, one can connect all nodes to all other nodes and weight the edges with the similarity between the corresponding drugs or targets. However, the time of computing the covariance matrix of the Gaussian distribution, which is defined through the CCRF depends on the sparsity of $S$. It is necessary to compute this inverse in each step of the parameter learning as well as in the inference step. In order to get CCRFs with a feasible structure, the edges for the experiments in this thesis where chosen by connecting all drugs and targets to its $k=4$ nearest neighbors. An other strategy to connect the nodes, that was tested in this thesis is to chose a similarity-threshold $t$ and connect all drugs and targets with a similarity above the threshold.
+As mentioned above, the datasets were also binarized according to cut-off thresholds to evalute the performance on the classification task. In case of binary interaction labels, the $CI$ becomes equal to the commonly used Area Under the Receiver Operating Characteristic Curve (AUC) metric \cite{pahikkala2014toward}:
 
+\begin{equation}
+AUC = \frac{1}{m_+m_-}\sum\limits_{y_i=1,y_j=-1}h(f_i-f_j)
+\end{equation}
+
+where $m_+$ and $m_-$ are the numbers of drug-target pairs belonging to the positive and negative classes. For the binary classification task, the performance was also evaluated using the Area Under the Precision-Recall curve (AUPR), which has been used in most of the previous studies on drug-target interaction prediction.
 
 
