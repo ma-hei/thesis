@@ -1,7 +1,7 @@
 \documentclass{sfuthesis}
 
 \title{Continuous Conditional Random Fields for Drug Target Interaction Prediction}
-\thesistype{Master}
+\thesistype{A Thesis}
 \author{Marten Heidemeyer}
 \previousdegrees{%
 	B.Sc., Universit{\"a}t zu L{\"u}beck, 2013}
@@ -11,15 +11,15 @@
 \faculty{}
 \copyrightyear{2016}
 \semester{Fall 2016}
-\date{1 September 2015}
+\date{October $3^{rd}$, 2016}
 
 \keywords{Drug-target interaction, predictive modeling, machine learning}
 
 \committee{%
-	\chair{Faraz Harach}{}
-	\member{}{Prof. Martin Ester\\Professor}
-	\member{}{Dr. Artem Cherkasov\\Professor}
-	\member{}{Leonid Chindelevitch\\Assistant Professor\\School of Computing Science}
+	\chair{Faraz Hach\\Research Associate}{}
+	\member{}{Martin Ester\\Senior Supervisor\\Professor}
+	\member{}{Artem Cherkasov\\Senior Research Scientist, Vancouver Prostate Center (Former Adjunct Professor at Simon Fraser University)\\ }
+	\member{}{Leonid Chindelevitch\\Assistant/Associate/Professor\\School/Department or Faculty}
 }
 
 %   PACKAGES AND CUSTOMIZATIONS  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -76,18 +76,19 @@
 \frontmatter
 \maketitle{}
 \makecommittee{}
-
+\doublespacing
 \begin{abstract}
 Knowledge about the interaction between drugs and target proteins is essential in the drug discovery process.
 Understanding the relationship between compounds and proteins through wetlab experiments alone is time-consuming and costly. With the motivation to support the experimental work by systematically prioritizing the most potent compounds for a target, numerous methods for the in-silico prediction of drug-target interaction have been proposed recently and high performance on binary datasets, where drug-target pairs are classified as either binding or non-binding have been reported. A possible drawback of binary datasets is that missing values and non interacting drug-target pairs are not differentiated. In this thesis, a model is developed that predicts the binding strengths of drug-target pairs as continuous values and thus incorporates the whole interaction spectrum from true negative to true positive interactions in the learning phase. The developed model combines two previously used approaches for the drug-target problem, which are Matrix Factorization and Conditional Random Fields. The model is evaluated in terms of the metrics $AUC$, $AUPR$ and $CI$ on three datasets and a slight improvement in performance is observered when compared to the state of the art method.
 \end{abstract}
 
 \begin{dedication} % optional
-I dedicate this work to Mama, Papa and all my friends
+I dedicate this work to my mother, my father and all my friends
 \end{dedication}
 
 \begin{acknowledgements} % optional
-I would like to express my gratitude to my senior supervisor Prof. Martin Ester for his guidance, patience and support throughout my master studies. 
+I would like to express my gratitude to my senior supervisor Prof. Martin Ester for his guidance, patience and support throughout the process of my master studies. I feel specially grateful for having worked under Prof. Ester's supervision not only for the invaluable advice on this thesis but also for the encouragement and inspiration to appreciate the world and life outside of the lab. Additionally, I would like to thank Dr. Artem Cherkasov for being my supervisor, for the helpful discussions and for the support. Further, I have to thank Prof. Barbara Hammer who gave me valuable input during my research exchange with the University of Bielefeld. I also thank Dr. Leonid Chindelevitch for serving as the internal examiner of this thesis and Faraz Harach for serving as a graduate chair. Special thanks go to my lab mates for their companionship: Tong He, Dr. Yao Wu, Xin Wang, Beidou Wang, Mehrdad Mansouri, Sahand Khakabimamaghani, Boshra Nabaei, Jiaxi Tang, Weipeng Lin, Hongwei Liang, Zhilin Zhang and Yue Wang.
+Finally, my sincerest gratitude goes to my parents for their endless love and support through all the years.
 \end{acknowledgements}
 
 \addtoToC{Table of Contents}\tableofcontents\clearpage

@@ -18,9 +18,9 @@ Throughout this thesis the terms \textit{drugs} and \textit{targets} are used fr
 
 \chapter{Review of Literature}
 \label{chp:review}
-Machine Learning and Data Mining techniques for drug development is a hot topic. In most existing methods the problem is formulated as a binary classification problem, where the drug-target pairs are treated as instances and the chemical structures of drugs and the amino acid subsequences of the targets are used as features, describing the instances. The goal in the binary formulation is to classify a given drug-target pair into binding and non binding. This approach stands in contrast with the developed method in this thesis, which predicts continuous drug-target binding affinities, where the binding affinity describes the strength of the binding between the drug and the target. The related methods which classify drug-target pairs will still be introduced here because the majority of existing work formulates the problem as such. Additionally, the only existing method in the literature, $KronRLS$, which predicts continuous binding affinities is introduced here. This method will be used as a comparison model to evaluate the developed model in this thesis. The following sections describe the state of the art machine learning based methods for drug-target interaction prediction, including the comparison model $KronRLS$. As described below, machine learning based methods for drug-target interaction prediction typically utilize similarity matrices of the drugs and targets to predict missing interactions. The method that is developed in this thesis follows this approach and the details of the types of similarity metrics for the drugs and targets are described in section \ref{sec:datasets}. To understand the related work, it is sufficient to know that a similarity value for each drug-drug pair and each target-target pair is given.
+Machine Learning and Data Mining techniques for drug development is a hot topic. In most existing methods the problem is formulated as a binary classification problem, where the drug-target pairs are treated as instances and the chemical structures of drugs and the amino acid subsequences of the targets are used as features, describing the instances. The goal in the binary formulation is to classify a given drug-target pair into binding and non binding. This approach stands in contrast with the developed method in this thesis, which predicts continuous drug-target binding affinities, where the binding affinity describes the strength of the binding between the drug and the target. The related methods which classify drug-target pairs will still be introduced here because the majority of existing work formulates the problem as such. Additionally, the only existing method in the literature, $KronRLS$, which predicts continuous binding affinities is introduced here. This method will be used as a comparison model to evaluate the developed model in this thesis. The following sections describe the state of the art Machine Learning based methods for drug-target interaction prediction, including the comparison model $KronRLS$. As described below, Machine Learning based methods for drug-target interaction prediction typically utilize similarity matrices of the drugs and targets to predict missing interactions. The method that is developed in this thesis follows this approach and the details of the types of similarity metrics for the drugs and targets are described in section \ref{sec:datasets}. To understand the related work, it is sufficient to know that a similarity value for each drug-drug pair and each target-target pair is given.
 
-Two existing methods for drug-target interaction prediction that are not based on machine learning techniques are docking simulation and ligand-based approaches. In docking simulation the interaction strength of ligands and proteins is estimated based on the structure of the target protein. This process is extremely time-consuming and the structural information of a protein is not always available \cite{liu2016neighborhood}. In ligand based approaches, the interaction strength of a candidate ligand to a target protein is obtained by comparing the candiate ligand to ligands for which the interaction strength to the target is known. This approach is not applicable, when information of candidate-similar ligands is not available for the target protein. Both approches will not be examined further here. 
+Two existing methods for drug-target interaction prediction that are not based on Machine Learning techniques are docking simulation and ligand-based approaches \cite{kinnings2009drug}, \cite{li2011computational}, \cite{wang2013prediction}. In docking simulation the interaction strength of ligands and proteins is estimated based on the structure of the target protein. This process is extremely time-consuming and the structural information of a protein is not always available \cite{liu2016neighborhood}. In ligand based approaches, the interaction strength of a candidate ligand to a target protein is obtained by comparing the candiate ligand to ligands for which the interaction strength to the target is known. This approach is not applicable, when information of candidate-similar ligands is not available for the target protein. Both approches  will not be examined further here. 
 
 The following sections are titled by the first author of the respective method, followed by the title of the paper and the year that the method was published.
 
@@ -70,12 +70,18 @@ High-scoring compound-protein pairs of any of the three above types are predicte
 \end{figure}
 
 \section{Twan van Laarhoven, "Gaussian interaction profile kernels for predicting drug-target interaction.", 2011}
+\label{rlskron}
 
-The authors of this method first build an interaction profile for each drug and for each target. The interaction profile of each compound is a binary vector describing the presence or absence of interaction with every target in the network. The interaction profile for each target is defined analogously. Figure \ref{fig:laarhoven_1} illustrates the interaction profiles, constructed from the drug-target interaction network. The interaction profiles of the drugs and targets are used as feature vectors and a Gaussian kernel is constructed for the drugs and targets respectively. Let $y_{d_i}$ be the interaction profile of drug $d_i$, then the Gaussian kernel for the drugs is defined as
+The authors of this method first build an interaction profile for each drug and for each target \cite{van2011gaussian}. The interaction profile of each compound is a binary vector describing the presence or absence of interaction with every target in the network. The interaction profile for each target is defined analogously. Figure \ref{fig:laarhoven_1} illustrates the interaction profiles, constructed from the drug-target interaction network. The interaction profiles of the drugs and targets are used as feature vectors and a Gaussian kernel is constructed for the drugs and targets respectively. Let $y_{d_i}$ be the interaction profile of drug $d_i$, then the Gaussian kernel for the drugs is defined as
 \begin{center}
 $K_{GIP}(d_i,d_j) = exp(-\gamma_d || y_{di}-y_{dj} ||^2)$
 \end{center}
-and the Gaussian kernel for the targets can be defined analogously. Here, $GIP$ stands for Gaussian Interaction Profile and the parameter $\gamma_d$ controls the kernels bandwidth. The similarity information of the drugs and targets is integrated by defining two new kernels $K_{\text{chemical}}$ and $K_{\text{genomic}}$ for the drugs and targets respectively which are defined as:
+and the Gaussian kernel for the targets can be defined analogously. Here, $GIP$ stands for Gaussian Interaction Profile and the parameter $\gamma_d$ controls the kernels bandwidth. The authors set $\gamma_d$ to:
+\begin{center}
+$\gamma_d = \frac{1}{\frac{1}{n_d}\sum\limits_{i=1}^{n_d}|y_{d_i}|^2}$
+\end{center}
+and $\gamma_t$ is defined analogously. 
+The similarity information of the drugs and targets is integrated by defining two new kernels $K_{\text{chemical}}$ and $K_{\text{genomic}}$ for the drugs and targets respectively which are defined as:
 \begin{equation}
 \begin{split}
 K_{\text{chemical}} = (S_D+S_D^T)/2 \\
@@ -87,10 +93,12 @@ where $S_D$ and $S_T$ stand for the given similarity matrices of the drugs and t
 $K_d=\alpha_dK_{\text{chemical}}+(1-\alpha_d)K_{GIP}$\\
 $K_t =\alpha_tK_{\text{genomic}}+(1-\alpha_t)K_{GIP}$
 \end{center}
+In the authors implementation, the parameters $\alpha_d, \alpha_t$ were chosen as $\alpha_d = \alpha_t = 0.5$.
 A Regularized Least Squares (RLS) classifier is chosen to generalize from the training data. The predicted values $\hat{y}$ of the RLS classifier for a given kernel $K$ and training vector $y$ are defined as:
 \begin{center}
 $\hat{y} = K(K+\sigma I)^{-1}y$
 \end{center}
+Here $\sigma$ is a regularization parameter. Higher values of $\sigma$ give a smoother result, while for $\sigma=0$, we get $\hat{y}=y$.
 With the matrix $Y\in n_d \times n_t$ being the binary matrix of training values of $n_d$ drugs and $n_t$ targets and the kernels for the drugs and targets as defined above, the authors of the model propose two ways to predict the interaction of all drug-target pairs in the matrix. The first type of prediction $RLS$-$avg$ is defined as:
 \begin{center}
 $\hat{Y}=\frac{1}{2}(K_d(K_d+\sigma I)^{-1}Y)+\frac{1}{2}(K_t(K_t+\sigma I)^{-1}Y^T)^T$
@@ -183,7 +191,7 @@ A similar term is added for the latent vectors of the targets. These constrainin
 
 \section{Tapio Pahikkala, "Toward more realistic drug-target interaction predictions.", 2014}
 
-$KronRLS$ is a model for continuous drug-target interaction prediction that was presented in \cite{pahikkala2014toward}. The model that is developed in this thesis will later be compared to the performance of $KronRLS$. $KronRLS$ is a kernel methods which formulates the problem as follows:
+$KronRLS$ is a model for continuous drug-target interaction prediction that was presented in \cite{pahikkala2014toward}. Note that $RLS-Kron$, which is introduced in section \ref{rlskron} and $KronRLS$, which is introduced here are two different methods. The model that is developed in this thesis will later be compared to the performance of $KronRLS$. $KronRLS$ is a kernel methods which formulates the problem as follows:
 for a set $D$ of drugs and a set $T$ of targets, we have a set $X = x_1,\dots,x_m$ of drug-target pairs ($X$ is a subset of $D\times T$) with an associated vector $y = y_1,\dots,y_m$ of continuous binding affinities as training data. To find a prediction function $f(x)$ for all possible drug-target pairs $x \in D\times T$, we learn $f$ from the training data by minimizing the objective:
 \begin{equation}
 J(f) = \sum\limits_{i=1}^{m}(y_i-f(x_i))^2 + \lambda ||f||_k^2
